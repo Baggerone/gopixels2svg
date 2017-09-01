@@ -2,7 +2,7 @@ package pixels2svg
 
 import (
 	"fmt"
-    "os"
+	"os"
 )
 
 type Line struct {
@@ -499,7 +499,7 @@ func (s *ShapeExtractor) GetSVGText() string {
 		hexColor := GetHexColor(next.ColorRGBA)
 
 		nextSVG := fmt.Sprintf("  <line class=\"%s\" ", hexColor)
-        nextSVG += fmt.Sprintf("x1=\"%d\" y1=\"%d\" ", next.ColX1, next.RowY1)
+		nextSVG += fmt.Sprintf("x1=\"%d\" y1=\"%d\" ", next.ColX1, next.RowY1)
 		nextSVG += fmt.Sprintf("x2=\"%d\" y2=\"%d\" ", next.ColX2, next.RowY2)
 		nextSVG += "stroke=\"" + hexColor + "\" fill=\"" + hexColor + "\" />"
 		wholeSVG += nextSVG + "\n"
@@ -511,12 +511,12 @@ func (s *ShapeExtractor) GetSVGText() string {
 }
 
 func (s *ShapeExtractor) WriteSVGToFile(filePath string) {
-    f, err := os.Create(filePath)
-    check(err)
-    defer f.Close()
-    _, err = f.WriteString(s.GetSVGText())
-    check(err)
-    println("\nWrote SVG to ", filePath)
+	f, err := os.Create(filePath)
+	check(err)
+	defer f.Close()
+	_, err = f.WriteString(s.GetSVGText())
+	check(err)
+	println("\nWrote SVG to ", filePath)
 }
 
 func GetHexColor(colorRGBA [4]uint8) string {
@@ -774,7 +774,7 @@ func Split2Int(inArray [2]int) (int, int) {
 }
 
 func check(e error) {
-    if e != nil {
-        panic(e)
-    }
+	if e != nil {
+		panic(e)
+	}
 }
