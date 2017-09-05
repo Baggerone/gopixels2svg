@@ -169,35 +169,35 @@ func compareSliceofStrings(results, expected []string) string {
 
 func getColorGrid() [][][4]uint8 {
 	grid := [][][4]uint8{
-		[][4]uint8{ // First column
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
+		{ // First column
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
 		},
-		[][4]uint8{ // Second column
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
+		{ // Second column
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
 		},
-		[][4]uint8{ // Third column
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
+		{ // Third column
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
 		},
-		[][4]uint8{ // Fourth column
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
+		{ // Fourth column
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
 		},
-		[][4]uint8{ // Fifth column
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
-			[4]uint8{1, 1, 1, 1},
+		{ // Fifth column
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
+			{1, 1, 1, 1},
 		},
 	}
 	return grid
@@ -505,15 +505,15 @@ func TestOutlinePolygonPartial(t *testing.T) {
 
 	results := s.OutlinePolygon(colX, rowY, direction, [4]uint8{1, 1, 1, 1})
 	expected := [][2]int{
-		[2]int{1, 2},
-		[2]int{2, 2},
-		[2]int{3, 1},
-		[2]int{4, 1},
-		[2]int{4, 2},
-		[2]int{3, 3},
-		[2]int{2, 3},
-		[2]int{1, 3},
-		[2]int{0, 3},
+		{1, 2},
+		{2, 2},
+		{3, 1},
+		{4, 1},
+		{4, 2},
+		{3, 3},
+		{2, 3},
+		{1, 3},
+		{0, 3},
 	}
 
 	err := compareOutlinePoints(results, expected)
@@ -536,10 +536,10 @@ func TestMarkPolygonAlreadyDonePartial(t *testing.T) {
 
 	// add a column
 	colorGrid = append(colorGrid, [][4]uint8{
-		[4]uint8{1, 1, 1, 1},
-		[4]uint8{1, 1, 1, 1},
-		[4]uint8{1, 1, 1, 1},
-		[4]uint8{1, 1, 1, 1},
+		{1, 1, 1, 1},
+		{1, 1, 1, 1},
+		{1, 1, 1, 1},
+		{1, 1, 1, 1},
 	})
 
 	// add two rows
@@ -559,23 +559,23 @@ func TestMarkPolygonAlreadyDonePartial(t *testing.T) {
 
 	s.Init(colorGrid)
 	outlinePoints := [][2]int{
-		[2]int{1, 1},
-		[2]int{2, 1},
-		[2]int{3, 2},
-		[2]int{4, 1},
-		[2]int{5, 1},
-		[2]int{5, 2},
-		[2]int{5, 3},
-		[2]int{5, 4},
-		[2]int{5, 5},
-		[2]int{4, 5},
-		[2]int{3, 5},
-		[2]int{2, 5},
-		[2]int{1, 5},
-		[2]int{0, 5},
-		[2]int{0, 4},
-		[2]int{0, 3},
-		[2]int{0, 2},
+		{1, 1},
+		{2, 1},
+		{3, 2},
+		{4, 1},
+		{5, 1},
+		{5, 2},
+		{5, 3},
+		{5, 4},
+		{5, 5},
+		{4, 5},
+		{3, 5},
+		{2, 5},
+		{1, 5},
+		{0, 5},
+		{0, 4},
+		{0, 3},
+		{0, 2},
 	}
 
 	s.markPolygonAlreadyDone(outlinePoints)
@@ -583,12 +583,12 @@ func TestMarkPolygonAlreadyDonePartial(t *testing.T) {
 	// first column
 	results := s.alreadyDone
 	expected := [][]bool{
-		[]bool{false, false, true, true, true, true},
-		[]bool{false, true, true, true, true, true},
-		[]bool{false, true, true, true, true, true},
-		[]bool{false, false, true, true, true, true},
-		[]bool{false, true, true, true, true, true},
-		[]bool{false, true, true, true, true, true},
+		{false, false, true, true, true, true},
+		{false, true, true, true, true, true},
+		{false, true, true, true, true, true},
+		{false, false, true, true, true, true},
+		{false, true, true, true, true, true},
+		{false, true, true, true, true, true},
 	}
 
 	err := compareBoolGrids(results, expected)
@@ -654,16 +654,16 @@ func TestGetRightDirectionFromNorthWest(t *testing.T) {
 
 func TestFindOutlineOverlap(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{1, 1},
-		[2]int{1, 2},
-		[2]int{1, 3},
-		[2]int{2, 3},
-		[2]int{3, 3},
-		[2]int{3, 2},
-		[2]int{2, 2},
-		[2]int{1, 2},
-		[2]int{1, 1},
-		[2]int{2, 1},
+		{1, 1},
+		{1, 2},
+		{1, 3},
+		{2, 3},
+		{3, 3},
+		{3, 2},
+		{2, 2},
+		{1, 2},
+		{1, 1},
+		{2, 1},
 	}
 
 	overlap := FindOutlineOverlap(outlinePoints)
@@ -685,16 +685,16 @@ func TestFindOutlineOverlap(t *testing.T) {
 
 func TestCleanUpPolygonOutline(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{1, 1}, // start of second overlap
-		[2]int{1, 2}, // start of first purge
-		[2]int{1, 3},
-		[2]int{2, 3},
-		[2]int{3, 3},
-		[2]int{3, 2},
-		[2]int{2, 2}, // end of first purge
-		[2]int{1, 2}, // post first overlap
-		[2]int{1, 1}, // post second overlap
-		[2]int{2, 1},
+		{1, 1}, // start of second overlap
+		{1, 2}, // start of first purge
+		{1, 3},
+		{2, 3},
+		{3, 3},
+		{3, 2},
+		{2, 2}, // end of first purge
+		{1, 2}, // post first overlap
+		{1, 1}, // post second overlap
+		{2, 1},
 	}
 
 	results := CleanUpPolygonOutline(
@@ -704,17 +704,17 @@ func TestCleanUpPolygonOutline(t *testing.T) {
 	)
 
 	expected := [][][2]int{
-		[][2]int{ // Main Polygon
-			[2]int{1, 1},
-			[2]int{2, 1},
+		{ // Main Polygon
+			{1, 1},
+			{2, 1},
 		},
-		[][2]int{ // Separated-out polygon
-			[2]int{1, 2},
-			[2]int{1, 3},
-			[2]int{2, 3},
-			[2]int{3, 3},
-			[2]int{3, 2},
-			[2]int{2, 2},
+		{ // Separated-out polygon
+			{1, 2},
+			{1, 3},
+			{2, 3},
+			{3, 3},
+			{3, 2},
+			{2, 2},
 		},
 	}
 
@@ -726,16 +726,16 @@ func TestCleanUpPolygonOutline(t *testing.T) {
 
 func TestCleanUpPolygonOutlineNoOverlaps(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{1, 1},
-		[2]int{2, 1},
-		[2]int{3, 1},
-		[2]int{3, 2},
-		[2]int{3, 3},
-		[2]int{3, 4},
-		[2]int{2, 4},
-		[2]int{1, 4},
-		[2]int{1, 3},
-		[2]int{1, 2},
+		{1, 1},
+		{2, 1},
+		{3, 1},
+		{3, 2},
+		{3, 3},
+		{3, 4},
+		{2, 4},
+		{1, 4},
+		{1, 3},
+		{1, 2},
 	}
 
 	results := CleanUpPolygonOutline(
@@ -778,14 +778,14 @@ func TestGetPolygonsFromCell(t *testing.T) {
 
 	results := s.GetPolygonsFromCell(colX, rowY, direction, [4]uint8{1, 1, 1, 1})
 	expected := [][][2]int{
-		[][2]int{
-			[2]int{3, 1},
-			[2]int{4, 1}, // East
-			[2]int{4, 2}, // South
-			[2]int{3, 3}, // South-West
-			[2]int{0, 3}, // West
-			[2]int{1, 2}, // North-East
-			[2]int{2, 2}, // East
+		{
+			{3, 1},
+			{4, 1}, // East
+			{4, 2}, // South
+			{3, 3}, // South-West
+			{0, 3}, // West
+			{1, 2}, // North-East
+			{2, 2}, // East
 		},
 	}
 
@@ -823,17 +823,17 @@ func TestGetPolygonsFromCellComplicated(t *testing.T) {
 
 	results := s.GetPolygonsFromCell(colX, rowY, direction, [4]uint8{1, 1, 1, 1})
 	expected := [][][2]int{
-		[][2]int{
-			[2]int{2, 1},
-			[2]int{3, 1}, // East
+		{
+			{2, 1},
+			{3, 1}, // East
 			// [2]int{4, 1}, // East - purged
-			[2]int{2, 2}, // South
+			{2, 2}, // South
 		},
-		[][2]int{
-			[2]int{2, 2},
-			[2]int{3, 3}, // South-East
-			[2]int{2, 3}, // West
-			[2]int{1, 3}, // West
+		{
+			{2, 2},
+			{3, 3}, // South-East
+			{2, 3}, // West
+			{1, 3}, // West
 			// [2]int{0, 3}, // West - purged
 		},
 	}
@@ -859,11 +859,11 @@ func TestProcessAllPolygons(t *testing.T) {
 
 	// Color the B cells
 	BColRows := [][]int{
-		[]int{},
-		[]int{1, 2},
-		[]int{0, 1, 2, 3},
-		[]int{0, 1, 2},
-		[]int{0},
+		{},
+		{1, 2},
+		{0, 1, 2, 3},
+		{0, 1, 2},
+		{0},
 	}
 
 	for colIndex, nextCol := range BColRows {
@@ -874,11 +874,11 @@ func TestProcessAllPolygons(t *testing.T) {
 
 	// Color the C cells
 	CColRows := [][]int{
-		[]int{2, 3},
-		[]int{3},
-		[]int{},
-		[]int{3},
-		[]int{1, 2, 3},
+		{2, 3},
+		{3},
+		{},
+		{3},
+		{1, 2, 3},
 	}
 
 	for colIndex, nextCol := range CColRows {
@@ -891,30 +891,30 @@ func TestProcessAllPolygons(t *testing.T) {
 
 	results := allPolygons
 	expected := []Polygon{
-		Polygon{ // A's
+		{ // A's
 			ColorRGBA: [4]uint8{1, 1, 1, 1},
-			Points:    [][2]int{[2]int{0, 0}, [2]int{1, 0}, [2]int{0, 1}},
+			Points:    [][2]int{{0, 0}, {1, 0}, {0, 1}},
 		},
-		Polygon{ // B's
+		{ // B's
 			ColorRGBA: [4]uint8{2, 2, 2, 2},
 			Points: [][2]int{
-				[2]int{2, 0},
+				{2, 0},
 				// [2]int{3, 0}, // reduced into next one, since in a line
-				[2]int{4, 0},
-				[2]int{3, 1}, // gets reduced into next one, since in a line
-				[2]int{3, 2},
-				[2]int{2, 3},
-				[2]int{1, 2},
-				[2]int{1, 1},
+				{4, 0},
+				{3, 1}, // gets reduced into next one, since in a line
+				{3, 2},
+				{2, 3},
+				{1, 2},
+				{1, 1},
 			},
 		},
-		Polygon{ // C1
+		{ // C1
 			ColorRGBA: [4]uint8{3, 3, 3, 3},
-			Points:    [][2]int{[2]int{4, 2}, [2]int{4, 3}, [2]int{3, 3}},
+			Points:    [][2]int{{4, 2}, {4, 3}, {3, 3}},
 		},
-		Polygon{ // C2
+		{ // C2
 			ColorRGBA: [4]uint8{3, 3, 3, 3},
-			Points:    [][2]int{[2]int{0, 2}, [2]int{1, 3}, [2]int{0, 3}},
+			Points:    [][2]int{{0, 2}, {1, 3}, {0, 3}},
 		},
 	}
 
@@ -961,22 +961,22 @@ func TestGetAllShapes(t *testing.T) {
 
 	results := allPolygons
 	expected := []Polygon{
-		Polygon{ // A's
+		{ // A's
 			ColorRGBA: [4]uint8{1, 1, 1, 1},
 			Points: [][2]int{
-				[2]int{1, 0},
-				[2]int{4, 0},
-				[2]int{4, 1},
-				[2]int{3, 2},
-				[2]int{3, 3},
-				[2]int{2, 3},
-				[2]int{1, 2},
-				[2]int{0, 1},
+				{1, 0},
+				{4, 0},
+				{4, 1},
+				{3, 2},
+				{3, 3},
+				{2, 3},
+				{1, 2},
+				{0, 1},
 			},
 		},
-		Polygon{ // C1
+		{ // C1
 			ColorRGBA: [4]uint8{3, 3, 3, 3},
-			Points:    [][2]int{[2]int{0, 2}, [2]int{1, 3}, [2]int{0, 3}},
+			Points:    [][2]int{{0, 2}, {1, 3}, {0, 3}},
 		},
 	}
 
@@ -987,14 +987,14 @@ func TestGetAllShapes(t *testing.T) {
 	}
 
 	expectedLines := []Line{
-		Line{ // B
+		{ // B
 			ColorRGBA: [4]uint8{2, 2, 2, 2},
 			ColX1:     0,
 			RowY1:     0,
 			ColX2:     0,
 			RowY2:     0,
 		},
-		Line{ // C2
+		{ // C2
 			ColorRGBA: [4]uint8{3, 3, 3, 3},
 			ColX1:     4,
 			RowY1:     2,
@@ -1089,11 +1089,11 @@ func TestWriteSVGToFile(t *testing.T) {
 
 func TestGetIndexOfLastRepeatDirectionWhole(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{3, 3}, // South
-		[2]int{3, 4}, // South
-		[2]int{3, 5}, // South
-		[2]int{3, 6}, // South
-		[2]int{3, 7}, // South
+		{3, 3}, // South
+		{3, 4}, // South
+		{3, 5}, // South
+		{3, 6}, // South
+		{3, 7}, // South
 	}
 	results := getIndexOfLastRepeatDirection(outlinePoints)
 	expected := len(outlinePoints) - 1
@@ -1105,11 +1105,11 @@ func TestGetIndexOfLastRepeatDirectionWhole(t *testing.T) {
 
 func TestGetIndexOfLastRepeatDirectionPartial(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{3, 3}, // South
-		[2]int{3, 4}, // South
-		[2]int{3, 5}, // last South
-		[2]int{4, 5}, // East
-		[2]int{4, 6}, // South
+		{3, 3}, // South
+		{3, 4}, // South
+		{3, 5}, // last South
+		{4, 5}, // East
+		{4, 6}, // South
 	}
 	results := getIndexOfLastRepeatDirection(outlinePoints)
 	expected := 2
@@ -1121,13 +1121,13 @@ func TestGetIndexOfLastRepeatDirectionPartial(t *testing.T) {
 
 func TestGetIndexOfLastRepeatDirectionPatternPairWhole(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{3, 3},
-		[2]int{4, 3}, // East
-		[2]int{4, 4}, // South
-		[2]int{5, 4}, // East
-		[2]int{5, 5}, // South
-		[2]int{6, 5}, // East
-		[2]int{6, 6}, // South
+		{3, 3},
+		{4, 3}, // East
+		{4, 4}, // South
+		{5, 4}, // East
+		{5, 5}, // South
+		{6, 5}, // East
+		{6, 6}, // South
 	}
 
 	results := getIndexOfLastRepeatDirectionPattern(outlinePoints)
@@ -1140,14 +1140,14 @@ func TestGetIndexOfLastRepeatDirectionPatternPairWhole(t *testing.T) {
 
 func TestGetIndexOfLastRepeatDirectionPatternPairAlmostWhole(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{3, 3},
-		[2]int{4, 3}, // East
-		[2]int{4, 4}, // South
-		[2]int{5, 4}, // East
-		[2]int{5, 5}, // South
-		[2]int{6, 5}, // East
-		[2]int{6, 6}, // South
-		[2]int{7, 6}, // East
+		{3, 3},
+		{4, 3}, // East
+		{4, 4}, // South
+		{5, 4}, // East
+		{5, 5}, // South
+		{6, 5}, // East
+		{6, 6}, // South
+		{7, 6}, // East
 	}
 
 	results := getIndexOfLastRepeatDirectionPattern(outlinePoints)
@@ -1160,13 +1160,13 @@ func TestGetIndexOfLastRepeatDirectionPatternPairAlmostWhole(t *testing.T) {
 
 func TestGetIndexOfLastRepeatDirectionPatternPairPartial(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{3, 3},
-		[2]int{4, 3}, // East
-		[2]int{4, 4}, // South
-		[2]int{5, 4}, // East
-		[2]int{5, 5}, // South - last of pattern
-		[2]int{6, 5}, // East
-		[2]int{7, 5}, // East
+		{3, 3},
+		{4, 3}, // East
+		{4, 4}, // South
+		{5, 4}, // East
+		{5, 5}, // South - last of pattern
+		{6, 5}, // East
+		{7, 5}, // East
 	}
 
 	results := getIndexOfLastRepeatDirectionPattern(outlinePoints)
@@ -1179,15 +1179,15 @@ func TestGetIndexOfLastRepeatDirectionPatternPairPartial(t *testing.T) {
 
 func TestGetIndexOfLastRepeatDirectionPatternWhole(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{3, 3},
-		[2]int{4, 3}, // East
-		[2]int{5, 3}, // East
-		[2]int{6, 3}, // East
-		[2]int{6, 4}, // South
-		[2]int{7, 4}, // East
-		[2]int{8, 4}, // East
-		[2]int{9, 4}, // East
-		[2]int{9, 5}, // South
+		{3, 3},
+		{4, 3}, // East
+		{5, 3}, // East
+		{6, 3}, // East
+		{6, 4}, // South
+		{7, 4}, // East
+		{8, 4}, // East
+		{9, 4}, // East
+		{9, 5}, // South
 	}
 
 	results := getIndexOfLastRepeatDirectionPattern(outlinePoints)
@@ -1200,16 +1200,16 @@ func TestGetIndexOfLastRepeatDirectionPatternWhole(t *testing.T) {
 
 func TestGetIndexOfLastRepeatDirectionPatternAlmostWhole(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{3, 3},
-		[2]int{4, 3},  // East
-		[2]int{5, 3},  // East
-		[2]int{6, 3},  // East
-		[2]int{6, 4},  // South
-		[2]int{7, 4},  // East
-		[2]int{8, 4},  // East
-		[2]int{9, 4},  // East
-		[2]int{9, 5},  // South - last pattern
-		[2]int{10, 5}, // East
+		{3, 3},
+		{4, 3},  // East
+		{5, 3},  // East
+		{6, 3},  // East
+		{6, 4},  // South
+		{7, 4},  // East
+		{8, 4},  // East
+		{9, 4},  // East
+		{9, 5},  // South - last pattern
+		{10, 5}, // East
 	}
 
 	results := getIndexOfLastRepeatDirectionPattern(outlinePoints)
@@ -1222,20 +1222,20 @@ func TestGetIndexOfLastRepeatDirectionPatternAlmostWhole(t *testing.T) {
 
 func TestGetIndexOfLastRepeatDirectionPatternPartial(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{3, 3},
-		[2]int{4, 3},  // East
-		[2]int{5, 3},  // East
-		[2]int{6, 3},  // East
-		[2]int{6, 4},  // South
-		[2]int{7, 4},  // East
-		[2]int{8, 4},  // East
-		[2]int{9, 4},  // East
-		[2]int{9, 5},  // South - last pattern
-		[2]int{10, 5}, // East
-		[2]int{11, 5}, // East
-		[2]int{12, 5}, // East
-		[2]int{13, 5}, // East
-		[2]int{14, 5}, // East
+		{3, 3},
+		{4, 3},  // East
+		{5, 3},  // East
+		{6, 3},  // East
+		{6, 4},  // South
+		{7, 4},  // East
+		{8, 4},  // East
+		{9, 4},  // East
+		{9, 5},  // South - last pattern
+		{10, 5}, // East
+		{11, 5}, // East
+		{12, 5}, // East
+		{13, 5}, // East
+		{14, 5}, // East
 	}
 
 	results := getIndexOfLastRepeatDirectionPattern(outlinePoints)
@@ -1248,13 +1248,13 @@ func TestGetIndexOfLastRepeatDirectionPatternPartial(t *testing.T) {
 
 func TestGetIndexOfLastRepeatDirectionPatternShort(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{3, 3},
-		[2]int{4, 3}, // East
-		[2]int{5, 3}, // East
-		[2]int{6, 3}, // East
-		[2]int{7, 3}, // East
-		[2]int{7, 4}, // South
-		[2]int{8, 4}, // East
+		{3, 3},
+		{4, 3}, // East
+		{5, 3}, // East
+		{6, 3}, // East
+		{7, 3}, // East
+		{7, 4}, // South
+		{8, 4}, // East
 	}
 
 	results := getIndexOfLastRepeatDirectionPattern(outlinePoints)
@@ -1266,7 +1266,7 @@ func TestGetIndexOfLastRepeatDirectionPatternShort(t *testing.T) {
 }
 
 func TestGetIndexOfLastRepeatDirectionPatternTiny(t *testing.T) {
-	outlinePoints := [][2]int{[2]int{3, 3}}
+	outlinePoints := [][2]int{{3, 3}}
 
 	results := getIndexOfLastRepeatDirectionPattern(outlinePoints)
 	expected := 0
@@ -1279,12 +1279,12 @@ func TestGetIndexOfLastRepeatDirectionPatternTiny(t *testing.T) {
 func TestReducePolygonOutlineHorizontalLine(t *testing.T) {
 
 	outlinePoints := [][2]int{
-		[2]int{0, 0},
-		[2]int{1, 0},
-		[2]int{2, 0},
-		[2]int{3, 0},
-		[2]int{4, 0},
-		[2]int{4, 1},
+		{0, 0},
+		{1, 0},
+		{2, 0},
+		{3, 0},
+		{4, 0},
+		{4, 1},
 	}
 
 	resultsCount, resultsPoints := ReducePolygonOutline(outlinePoints)
@@ -1295,9 +1295,9 @@ func TestReducePolygonOutlineHorizontalLine(t *testing.T) {
 	}
 
 	expectedPoints := [][2]int{
-		[2]int{0, 0},
-		[2]int{4, 0},
-		[2]int{4, 1},
+		{0, 0},
+		{4, 0},
+		{4, 1},
 	}
 
 	err := compareOutlinePoints(resultsPoints, expectedPoints)
@@ -1309,12 +1309,12 @@ func TestReducePolygonOutlineHorizontalLine(t *testing.T) {
 func TestReducePolygonOutlineVerticalLine(t *testing.T) {
 
 	outlinePoints := [][2]int{
-		[2]int{0, 0},
-		[2]int{0, 1},
-		[2]int{0, 2},
-		[2]int{0, 3},
-		[2]int{0, 4},
-		[2]int{1, 4},
+		{0, 0},
+		{0, 1},
+		{0, 2},
+		{0, 3},
+		{0, 4},
+		{1, 4},
 	}
 
 	resultsCount, resultsPoints := ReducePolygonOutline(outlinePoints)
@@ -1326,9 +1326,9 @@ func TestReducePolygonOutlineVerticalLine(t *testing.T) {
 	}
 
 	expectedPoints := [][2]int{
-		[2]int{0, 0},
-		[2]int{0, 4},
-		[2]int{1, 4},
+		{0, 0},
+		{0, 4},
+		{1, 4},
 	}
 
 	err := compareOutlinePoints(resultsPoints, expectedPoints)
@@ -1339,13 +1339,13 @@ func TestReducePolygonOutlineVerticalLine(t *testing.T) {
 
 func TestReducePolygonOutlineFallingSlope(t *testing.T) {
 	outlinePoints := [][2]int{
-		[2]int{0, 0},
-		[2]int{0, 1}, // South 1
-		[2]int{1, 1}, // East 1
-		[2]int{1, 2}, // South 1
-		[2]int{2, 2}, // East 1 ... Reduce preceding three into this one
-		[2]int{2, 3}, // South 1
-		[2]int{1, 3}, // West 1
+		{0, 0},
+		{0, 1}, // South 1
+		{1, 1}, // East 1
+		{1, 2}, // South 1
+		{2, 2}, // East 1 ... Reduce preceding three into this one
+		{2, 3}, // South 1
+		{1, 3}, // West 1
 	}
 
 	resultsCount, resultsPoints := ReducePolygonOutline(outlinePoints)
@@ -1357,10 +1357,10 @@ func TestReducePolygonOutlineFallingSlope(t *testing.T) {
 	}
 
 	expectedPoints := [][2]int{
-		[2]int{0, 0},
-		[2]int{2, 2},
-		[2]int{2, 3},
-		[2]int{1, 3},
+		{0, 0},
+		{2, 2},
+		{2, 3},
+		{1, 3},
 	}
 
 	err := compareOutlinePoints(resultsPoints, expectedPoints)
@@ -1372,13 +1372,13 @@ func TestReducePolygonOutlineFallingSlope(t *testing.T) {
 func TestReducePolygonOutlineRisingSlope(t *testing.T) {
 
 	outlinePoints := [][2]int{
-		[2]int{0, 4},
-		[2]int{0, 3}, // North 1
-		[2]int{1, 3}, // East 1
-		[2]int{1, 2}, // North 1
-		[2]int{2, 2}, // East 1 ... Reduce preceding three into this one
-		[2]int{2, 1}, // North 1
-		[2]int{1, 1}, // West 1
+		{0, 4},
+		{0, 3}, // North 1
+		{1, 3}, // East 1
+		{1, 2}, // North 1
+		{2, 2}, // East 1 ... Reduce preceding three into this one
+		{2, 1}, // North 1
+		{1, 1}, // West 1
 	}
 
 	resultsCount, resultsPoints := ReducePolygonOutline(outlinePoints)
@@ -1390,10 +1390,10 @@ func TestReducePolygonOutlineRisingSlope(t *testing.T) {
 	}
 
 	expectedPoints := [][2]int{
-		[2]int{0, 4},
-		[2]int{2, 2},
-		[2]int{2, 1},
-		[2]int{1, 1},
+		{0, 4},
+		{2, 2},
+		{2, 1},
+		{1, 1},
 	}
 
 	err := compareOutlinePoints(resultsPoints, expectedPoints)
@@ -1405,47 +1405,47 @@ func TestReducePolygonOutlineRisingSlope(t *testing.T) {
 func TestReducePolygonOutlineComplicated(t *testing.T) {
 
 	outlinePoints := [][2]int{
-		[2]int{0, 0},
-		[2]int{0, 1}, // South
-		[2]int{1, 1}, // East
-		[2]int{1, 2}, // South
-		[2]int{2, 2}, // East - reduce previous three
-		[2]int{2, 3}, // South
-		[2]int{2, 4}, // South
-		[2]int{2, 5}, // South - reduce previous two
-		[2]int{3, 5}, // East
-		[2]int{4, 5}, // East - reduce previous one
-		[2]int{4, 4}, // North
-		[2]int{5, 4}, // East
-		[2]int{5, 5}, // South
-		[2]int{5, 6}, // South
-		[2]int{5, 7}, // South - reduce previous two
-		[2]int{4, 7}, // West
-		[2]int{3, 7}, // West  - reduce previous one
-		[2]int{3, 6}, // North
-		[2]int{2, 6}, // West
-		[2]int{2, 5}, // North
-		[2]int{1, 5}, // West - reduce previous three
-		[2]int{0, 5}, // West
-		[2]int{0, 4}, // North
-		[2]int{0, 3}, // North
-		[2]int{0, 2}, // North - reduce previous two
+		{0, 0},
+		{0, 1}, // South
+		{1, 1}, // East
+		{1, 2}, // South
+		{2, 2}, // East - reduce previous three
+		{2, 3}, // South
+		{2, 4}, // South
+		{2, 5}, // South - reduce previous two
+		{3, 5}, // East
+		{4, 5}, // East - reduce previous one
+		{4, 4}, // North
+		{5, 4}, // East
+		{5, 5}, // South
+		{5, 6}, // South
+		{5, 7}, // South - reduce previous two
+		{4, 7}, // West
+		{3, 7}, // West  - reduce previous one
+		{3, 6}, // North
+		{2, 6}, // West
+		{2, 5}, // North
+		{1, 5}, // West - reduce previous three
+		{0, 5}, // West
+		{0, 4}, // North
+		{0, 3}, // North
+		{0, 2}, // North - reduce previous two
 	}
 
 	_, resultsPoints := ReducePolygonOutline(outlinePoints)
 
 	expectedPoints := [][2]int{
-		[2]int{0, 0},
-		[2]int{2, 2}, // East
-		[2]int{2, 5}, // South
-		[2]int{4, 5}, // East
-		[2]int{4, 4}, // North
-		[2]int{5, 4}, // East
-		[2]int{5, 7}, // South
-		[2]int{3, 7}, // West
-		[2]int{1, 5}, // West
-		[2]int{0, 5}, // West
-		[2]int{0, 2}, // North
+		{0, 0},
+		{2, 2}, // East
+		{2, 5}, // South
+		{4, 5}, // East
+		{4, 4}, // North
+		{5, 4}, // East
+		{5, 7}, // South
+		{3, 7}, // West
+		{1, 5}, // West
+		{0, 5}, // West
+		{0, 2}, // North
 	}
 
 	err := compareOutlinePoints(resultsPoints, expectedPoints)

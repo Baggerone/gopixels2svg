@@ -10,9 +10,9 @@ func transposeGrid(grid [][][4]uint8) [][][4]uint8 {
 	newGrid := [][][4]uint8{}
 
 	// initialize new grid
-	for _ = range grid[0] {
+	for range grid[0] {
 		newColumn := [][4]uint8{}
-		for _ = range grid {
+		for range grid {
 			newColumn = append(newColumn, [4]uint8{})
 		}
 		newGrid = append(newGrid, newColumn)
@@ -64,10 +64,10 @@ func sailboat() [][][4]uint8 {
 
 	// the colors to be used for the different letters of the "image"
 	colors := map[string][4]uint8{
-		" ": [4]uint8{0, 0, 150, 0},
-		"s": [4]uint8{250, 250, 245, 0},
-		"m": [4]uint8{150, 150, 0, 0},
-		"h": [4]uint8{220, 50, 0, 0},
+		" ": {0, 0, 150, 0},
+		"s": {250, 250, 245, 0},
+		"m": {150, 150, 0, 0},
+		"h": {220, 50, 0, 0},
 	}
 	// convert the letters in the image strings (above) to colors of a column by row grid
 	return assignColorsToGrid(image, colors)
