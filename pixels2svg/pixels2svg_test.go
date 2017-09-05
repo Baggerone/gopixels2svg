@@ -1075,7 +1075,6 @@ func TestGetSVGTextLarge(t *testing.T) {
 	}
 }
 
-
 /*
  *  Manually check the file that has been written
  */
@@ -1084,10 +1083,9 @@ func TestWriteSVGToFile(t *testing.T) {
 
 	gridColors := getBigColorGrid()
 	s.Init(gridColors)
-    
-    s.WriteSVGToFile("test_svg_output.xml")
-}
 
+	s.WriteSVGToFile("test_svg_output.xml")
+}
 
 func TestGetIndexOfLastRepeatDirectionWhole(t *testing.T) {
 	outlinePoints := [][2]int{
