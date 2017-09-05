@@ -261,7 +261,7 @@ func (s *ShapeExtractor) OutlinePolygon(
 	colX, rowY, direction int,
 	color [4]uint8,
 ) [][2]int {
-	outlinePoints := [][2]int{[2]int{colX, rowY}}
+	outlinePoints := [][2]int{{colX, rowY}}
 	if s.alreadyDone[colX][rowY] {
 		return [][2]int{}
 	}
