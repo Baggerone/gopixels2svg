@@ -1,9 +1,12 @@
 package pixels2svg
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 )
+
+type evaluatorFunc func(int, int, [4]uint8) bool
 
 type Line struct {
 	ColorRGBA [4]uint8
@@ -19,11 +22,25 @@ type Polygon struct {
 }
 
 type ShapeExtractor struct {
-	badDirection int
-	grid         [][][4]uint8
-	alreadyDone  [][]bool
-	ColCount     int
-	RowCount     int
+	badDirection       int
+	grid               [][][4]uint8
+	alreadyDone        [][]bool
+	ColCount           int
+	RowCount           int
+	neighborEvaluators [8]evaluatorFunc
+}
+
+func (s *ShapeExtractor) setNeighborEvaluators() {
+	s.neighborEvaluators = [8]evaluatorFunc{
+		s.isNorthCellGood,
+		s.isNorthEastCellGood,
+		s.isEastCellGood,
+		s.isSouthEastCellGood,
+		s.isSouthCellGood,
+		s.isSouthWestCellGood,
+		s.isWestCellGood,
+		s.isNorthWestCellGood,
+	}
 }
 
 func (s *ShapeExtractor) isCellDoneOrDifferent(
@@ -168,23 +185,6 @@ func (s *ShapeExtractor) getAngledRightDirection(direction int) int {
 	return direction + 1
 }
 
-func (s *ShapeExtractor) getNeighborEvaluator(
-	direction int,
-) func(int, int, [4]uint8) bool {
-	neighborEvaluators := map[int]func(int, int, [4]uint8) bool{
-		0: s.isNorthCellGood,
-		1: s.isNorthEastCellGood,
-		2: s.isEastCellGood,
-		3: s.isSouthEastCellGood,
-		4: s.isSouthCellGood,
-		5: s.isSouthWestCellGood,
-		6: s.isWestCellGood,
-		7: s.isNorthWestCellGood,
-	}
-
-	return neighborEvaluators[direction]
-}
-
 /*
  * Given a cell and a outline walker's direction, what is the new direction
  * of the first good neighboring cell,
@@ -195,9 +195,14 @@ func (s *ShapeExtractor) directionToGoodNeighboringCell(
 	color [4]uint8,
 ) int {
 
+	if s.neighborEvaluators[0] == nil {
+		s.setNeighborEvaluators()
+	}
+
 	newDirection := s.getLeftDirection(direction)
 	for index := 0; index < 7; index++ {
-		if s.getNeighborEvaluator(newDirection)(colX, rowY, color) {
+		evaluator := s.neighborEvaluators[newDirection]
+		if evaluator(colX, rowY, color) {
 			return newDirection
 		}
 		newDirection = s.getAngledRightDirection(newDirection)
@@ -263,14 +268,14 @@ func (s *ShapeExtractor) OutlinePolygon(
 ) [][2]int {
 	outlinePoints := [][2]int{{colX, rowY}}
 	if s.alreadyDone[colX][rowY] {
-		return [][2]int{}
+		return nil
 	}
 	for {
 		newDirection := s.directionToGoodNeighboringCell(colX, rowY, direction, color)
 
 		if newDirection >= s.badDirection {
 			if len(outlinePoints) <= 2 {
-				return [][2]int{}
+				return nil
 			}
 		}
 
@@ -313,7 +318,7 @@ func (s *ShapeExtractor) GetLine(startCol, startRow int) Line {
 	prevCol := startCol
 	prevRow := startRow
 
-	neighborEvaluator := s.getNeighborEvaluator(direction)
+	neighborEvaluator := s.neighborEvaluators[direction]
 
 	for {
 		nextCol, nextRow := s.getCellInDirection(prevCol, prevRow, direction)
@@ -397,11 +402,11 @@ func (s *ShapeExtractor) GetPolygonsFromCell(
  *
  */
 func (s *ShapeExtractor) markPolygonAlreadyDone(polygonOutline [][2]int) {
-	firstCol, firstRow := Split2Int(polygonOutline[0])
+	firstCol, firstRow := split2Int(polygonOutline[0])
 	color := s.grid[firstCol][firstRow]
 
 	for _, nextPoint := range polygonOutline {
-		nextCol, nextRow := Split2Int(nextPoint)
+		nextCol, nextRow := split2Int(nextPoint)
 		s.alreadyDone[nextCol][nextRow] = true
 
 		for lowerRow := nextRow + 1; lowerRow < s.RowCount-1; lowerRow++ {
@@ -467,6 +472,7 @@ func (s *ShapeExtractor) ProcessAllLines() []Line {
 }
 
 func (s *ShapeExtractor) GetAllShapes() ([]Polygon, []Line) {
+	s.setNeighborEvaluators()
 	allPolygons := s.ProcessAllPolygons()
 	allLines := s.ProcessAllLines()
 
@@ -479,60 +485,53 @@ func (s *ShapeExtractor) GetSVGText() string {
 	svgWidth := s.ColCount
 	svgHeight := s.RowCount
 
-	svgOpen := fmt.Sprintf("<svg width=\"%d\" height=\"%d\">\n <g>", svgWidth, svgHeight)
-	svgClose := " </g>\n</svg>"
-
-	wholeSVG := svgOpen + "\n"
+	var svgBuffer bytes.Buffer // Concatenation is more economical with a Buffer
+	svgBuffer.WriteString(
+		fmt.Sprintf(`<svg width="%d" height="%d">`, svgWidth, svgHeight),
+	)
+	svgBuffer.WriteString("\n <g>\n")
 
 	for _, next := range allPolygons {
 		hexColor := GetHexColor(next.ColorRGBA)
-		nextSVG := fmt.Sprintf("  <polygon class=\"%s\" points=\"", hexColor)
+		svgBuffer.WriteString(fmt.Sprintf(`  <polygon class="%s" points="`, hexColor))
 
 		for _, nextPoint := range next.Points {
-			nextSVG += fmt.Sprintf("%d,%d ", nextPoint[0], nextPoint[1])
+			svgBuffer.WriteString(fmt.Sprintf("%d,%d ", nextPoint[0], nextPoint[1]))
 		}
-		nextSVG += "\" stroke=\"" + hexColor + "\" fill=\"" + hexColor + "\" />"
-		wholeSVG += nextSVG + "\n"
+		svgBuffer.WriteString(fmt.Sprintf(`" stroke="%s" fill="%s" />`, hexColor, hexColor))
+		svgBuffer.WriteString("\n")
 	}
 
 	for _, next := range allLines {
 		hexColor := GetHexColor(next.ColorRGBA)
 
-		nextSVG := fmt.Sprintf("  <line class=\"%s\" ", hexColor)
-		nextSVG += fmt.Sprintf("x1=\"%d\" y1=\"%d\" ", next.ColX1, next.RowY1)
-		nextSVG += fmt.Sprintf("x2=\"%d\" y2=\"%d\" ", next.ColX2, next.RowY2)
-		nextSVG += "stroke=\"" + hexColor + "\" fill=\"" + hexColor + "\" />"
-		wholeSVG += nextSVG + "\n"
+		svgBuffer.WriteString(fmt.Sprintf(`  <line class="%s" `, hexColor))
+		svgBuffer.WriteString(fmt.Sprintf(`x1="%d" y1="%d" `, next.ColX1, next.RowY1))
+		svgBuffer.WriteString(fmt.Sprintf(`x2="%d" y2="%d" `, next.ColX2, next.RowY2))
+		svgBuffer.WriteString(fmt.Sprintf(`stroke="%s" fill="%s" />`, hexColor, hexColor))
+		svgBuffer.WriteString("\n")
 	}
 
-	wholeSVG += svgClose
+	svgBuffer.WriteString(" </g>\n</svg>")
 
-	return wholeSVG
+	return svgBuffer.String()
 }
 
-func (s *ShapeExtractor) WriteSVGToFile(filePath string) {
+func (s *ShapeExtractor) WriteSVGToFile(filePath string) error {
 	f, err := os.Create(filePath)
-	check(err)
 	defer f.Close()
+	if err != nil {
+		return err
+	}
 	_, err = f.WriteString(s.GetSVGText())
-	check(err)
-	println("\nWrote SVG to ", filePath)
+	if err == nil {
+		println("\nWrote SVG to ", filePath)
+	}
+	return err
 }
 
 func GetHexColor(colorRGBA [4]uint8) string {
-	return fmt.Sprintf("#%s%s%s",
-		Uint8ToHex(colorRGBA[0]),
-		Uint8ToHex(colorRGBA[1]),
-		Uint8ToHex(colorRGBA[2]),
-	)
-}
-
-func Uint8ToHex(num uint8) string {
-	hex := fmt.Sprintf("%X", num)
-	if len(hex) == 1 {
-		hex = "0" + hex
-	}
-	return hex
+	return fmt.Sprintf("#%02X%02X%02X", colorRGBA[0], colorRGBA[1], colorRGBA[2])
 }
 
 /*
@@ -761,7 +760,7 @@ func ReducePolygonOutline(
 
 func IsPointIn2IntArray(colX, rowY int, outlinePoints [][2]int) bool {
 	for _, nextPoint := range outlinePoints {
-		nextCol, nextRow := Split2Int(nextPoint)
+		nextCol, nextRow := split2Int(nextPoint)
 		if colX == nextCol && rowY == nextRow {
 			return true
 		}
@@ -769,12 +768,6 @@ func IsPointIn2IntArray(colX, rowY int, outlinePoints [][2]int) bool {
 	return false
 }
 
-func Split2Int(inArray [2]int) (int, int) {
+func split2Int(inArray [2]int) (int, int) {
 	return inArray[0], inArray[1]
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
 }
