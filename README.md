@@ -11,9 +11,13 @@ that image in svg format. (Note that at this time, only the Red, Green and Blue 
 It then writes the corresponding svg xml to a file.
 
 ## Example ##
-The **examples/main.go** file has a simple example of how to use the package to convert a grid of colors that represents 
-a sailboat.
+The **examples/main.go** file has simple examples of how to use the package to 
+ - convert a grid of colors or
+ - read in a *.png file and convert it
   
-When you run it, it creates an svg file named example_sailboat.xml.  If you copy that file and rename it as a *.html file,
-you can open it in a browser to see the image.
+You can also copy *.png files into the `examples` folder and include their names as command line arguments, e.g.
+  
+   `.../examples> go run main.go my-logo.png my-art.png`
+  
+That will create corresponding *.html files.
 

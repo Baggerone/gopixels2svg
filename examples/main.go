@@ -6,6 +6,7 @@ import (
 	"image"
 	_ "image/png" // needed for reading a PNG file, even though it's not explicitly used
 	"os"
+    "strings"
 )
 
 // Transpose a grid from row by column to column by row
@@ -116,9 +117,16 @@ func ReadPNGPixels(filePath string) [][][4]uint8 {
 	return colorGrid
 }
 
+
+
+
 /*
  * In order to see the SVG as an image,
- * open the *.html files in a browser
+ *   open the *.html files in a browser
+ * Also, you can copy *.png files into this folder
+ *   and include their names as command line arguments
+ *     e.g. go run main.go my-logo.png my-art.png
+ *   That will create corresponding *.html files.
  */
 func main() {
 	var s pixels2svg.ShapeExtractor
@@ -128,4 +136,13 @@ func main() {
 
 	s.Init(ReadPNGPixels("test1.png"))
 	s.WriteSVGToFile("example_test1.html")
+    
+    args := os.Args[1:]
+    for _, nextInput := range args {
+        if strings.HasSuffix(nextInput, ".png") {
+            s.Init(ReadPNGPixels(nextInput))
+            newName := strings.TrimSuffix(nextInput, ".png") + ".html"
+            s.WriteSVGToFile(newName)
+        }
+    }
 }
