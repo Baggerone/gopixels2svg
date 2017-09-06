@@ -30,6 +30,22 @@ type ShapeExtractor struct {
 	neighborEvaluators [8]evaluatorFunc
 }
 
+func (s *ShapeExtractor) showAlreadyDone() {
+	done := s.alreadyDone
+
+	// Output already done grid
+	for rowY := 0; rowY < len(done[0]); rowY++ {
+		for colX := 0; colX < len(done); colX++ {
+			if done[colX][rowY] {
+				print("1 ")
+			} else {
+				print("0 ")
+			}
+		}
+		println("")
+	}
+}
+
 func (s *ShapeExtractor) setNeighborEvaluators() {
 	s.neighborEvaluators = [8]evaluatorFunc{
 		s.isNorthCellGood,
@@ -409,19 +425,21 @@ func (s *ShapeExtractor) markPolygonAlreadyDone(polygonOutline [][2]int) {
 		nextCol, nextRow := split2Int(nextPoint)
 		s.alreadyDone[nextCol][nextRow] = true
 
-		for lowerRow := nextRow + 1; lowerRow < s.RowCount-1; lowerRow++ {
+		for lowerRow := nextRow + 1; lowerRow < s.RowCount; lowerRow++ {
 
 			if color != s.grid[nextCol][lowerRow] {
-				continue
+				break
 			}
 
 			if IsPointIn2IntArray(nextCol, lowerRow, polygonOutline) {
-				continue
+				break
 			}
 
 			s.alreadyDone[nextCol][lowerRow] = true
 		}
 	}
+	// s.showAlreadyDone()
+	// println("\n")
 }
 
 func (s *ShapeExtractor) ProcessAllPolygons() []Polygon {

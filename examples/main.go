@@ -1,8 +1,11 @@
 package main
 
 import (
-	pixels2svg "github.com/baggerone/gopixels2svg/pixels2svg"
 	// "fmt"
+	pixels2svg "github.com/baggerone/gopixels2svg/pixels2svg"
+	"image"
+	_ "image/png" // needed for reading a PNG file, even though it's not explicitly used
+	"os"
 )
 
 // Transpose a grid from row by column to column by row
@@ -43,23 +46,20 @@ func assignColorsToGrid(image []string, colors map[string][4]uint8) [][][4]uint8
 
 func sailboat() [][][4]uint8 {
 	image := []string{
-		"                    ",
+		"           m        ",
 		"           m        ",
 		"          sm        ",
 		"         ssms       ",
 		"        sssmss      ",
 		"       ssssmss      ",
 		"      sssssmsss     ",
-		"     ssssssmsss     ",
-		"    sssssssmssss    ",
-		"   ssssssssmssss    ",
+		"    sssssssmsss     ",
+		"  sssssssssmssss    ",
+		"sssssssssssmssss    ",
 		"           m        ",
 		"  hhhhhhhhhhhhhhhhh ",
-		"  hhhhhhhhhhhhhhh   ",
-		"   hhhhhhhhhhhhh    ",
-		"                    ",
-		"                    ",
-		"                    ",
+		"  hhhhhhhhhhhhhhhh  ",
+		"   hhhhhhhhhhhhhh   ",
 	}
 
 	// the colors to be used for the different letters of the "image"
@@ -73,14 +73,59 @@ func sailboat() [][][4]uint8 {
 	return assignColorsToGrid(image, colors)
 }
 
+// See https://jimdoescode.github.io/2015/05/22/manipulating-colors-in-go.html
+func convertToUint8(rgbTone uint32) uint8 {
+	return uint8(rgbTone / 0x101)
+}
+
+func ReadPNGPixels(filePath string) [][][4]uint8 {
+	// fmt.Println("\nReading \n", filePath)
+	infile, err := os.Open(filePath)
+	if err != nil {
+		// replace this with good error handling
+		panic(err)
+	}
+
+	defer infile.Close()
+
+	// Decode will figure out what type of image is in the file on its own.
+	// We just have to be sure all the image packages we want are imported.
+	src, _, err := image.Decode(infile)
+	if err != nil {
+		// replace this with good error handling
+		panic(err)
+	}
+
+	colorGrid := [][][4]uint8{}
+	bounds := src.Bounds()
+	width, height := bounds.Max.X, bounds.Max.Y
+	for x := 0; x < width; x++ {
+		newCol := [][4]uint8{}
+		for y := 0; y < height; y++ {
+			red, green, blue, _ := src.At(x, y).RGBA()
+			red8 := convertToUint8(red)
+			green8 := convertToUint8(green)
+			blue8 := convertToUint8(blue)
+
+			colorRGBA := [4]uint8{red8, green8, blue8, 255}
+			newCol = append(newCol, colorRGBA)
+		}
+		colorGrid = append(colorGrid, newCol)
+	}
+
+	return colorGrid
+}
+
 /*
  * In order to see the SVG as an image,
- * copy the file named example_sailboat.xml as an *.html file and then open it in a browser
+ * open the *.html files in a browser
  */
 func main() {
 	var s pixels2svg.ShapeExtractor
 
 	s.Init(sailboat())
+	s.WriteSVGToFile("example_sailboat.html")
 
-	s.WriteSVGToFile("example_sailboat.xml")
+	s.Init(ReadPNGPixels("test1.png"))
+	s.WriteSVGToFile("example_test1.html")
 }
