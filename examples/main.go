@@ -46,23 +46,20 @@ func assignColorsToGrid(image []string, colors map[string][4]uint8) [][][4]uint8
 
 func sailboat() [][][4]uint8 {
 	image := []string{
-		"                    ",
+		"           m        ",
 		"           m        ",
 		"          sm        ",
 		"         ssms       ",
 		"        sssmss      ",
 		"       ssssmss      ",
 		"      sssssmsss     ",
-		"     ssssssmsss     ",
-		"    sssssssmssss    ",
-		"   ssssssssmssss    ",
+		"    sssssssmsss     ",
+		"  sssssssssmssss    ",
+		"sssssssssssmssss    ",
 		"           m        ",
 		"  hhhhhhhhhhhhhhhhh ",
-		"  hhhhhhhhhhhhhhh   ",
-		"   hhhhhhhhhhhhh    ",
-		"                    ",
-		"                    ",
-		"                    ",
+		"  hhhhhhhhhhhhhhhh  ",
+		"   hhhhhhhhhhhhhh   ",
 	}
 
 	// the colors to be used for the different letters of the "image"
