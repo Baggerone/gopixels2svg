@@ -249,7 +249,7 @@ func getBigColorGrid() [][][4]uint8 {
 		}
 	}
 
-	// Add lines in middle of Left Rectangle
+	// Add a line in middle of Left Rectangle
 	for rowY := 4; rowY < 8; rowY++ {
 		gridColors[3][rowY] = blue
 	}
@@ -526,7 +526,7 @@ func TestOutlinePolygonPartial(t *testing.T) {
  * |  X |  X |  X |  X | X | X |
  * |  X |  0 |  1 |  X | 3 | 4 |
  * | 16 |  c |  c |  2 | c | 5 |
- * | 15 |  c |  c |  c | c | 6 |
+ * | 15 |  X |  X |  c | c | 6 |  // Has different color in middle
  * | 14 |  c |  c |  c | c | 7 |
  * | 13 | 12 | 11 | 10 | 9 | 8 |
  */
@@ -556,6 +556,8 @@ func TestMarkPolygonAlreadyDonePartial(t *testing.T) {
 	}
 	colorGrid[0][1] = otherColor
 	colorGrid[3][1] = otherColor
+	colorGrid[1][2] = otherColor
+	colorGrid[2][2] = otherColor
 
 	s.Init(colorGrid)
 	outlinePoints := [][2]int{
@@ -580,12 +582,11 @@ func TestMarkPolygonAlreadyDonePartial(t *testing.T) {
 
 	s.markPolygonAlreadyDone(outlinePoints)
 
-	// first column
 	results := s.alreadyDone
 	expected := [][]bool{
-		{false, false, true, true, true, true},
-		{false, true, true, true, true, true},
-		{false, true, true, true, true, true},
+		{false, false, true, true, true, true}, // first column
+		{false, true, false, true, true, true}, // second column
+		{false, true, false, true, true, true},
 		{false, false, true, true, true, true},
 		{false, true, true, true, true, true},
 		{false, true, true, true, true, true},
