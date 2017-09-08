@@ -522,7 +522,6 @@ func TestOutlinePolygonPartial(t *testing.T) {
 	}
 }
 
-
 /*
  * |  X |  X |  X |  X | X | X |
  * |  X |  0 |  1 |  X | 3 | 4 |
@@ -585,7 +584,7 @@ func TestMarkPolygonAlreadyDonePartial(t *testing.T) {
 
 	results := s.alreadyDone
 	expected := [][]bool{
-		{false, false, true, true, true, true}, //  column 0
+		{false, false, true, true, true, true},  //  column 0
 		{false, true, true, false, false, true}, //  column 1
 		{false, true, true, false, false, true},
 		{false, false, true, true, true, true},
@@ -598,7 +597,6 @@ func TestMarkPolygonAlreadyDonePartial(t *testing.T) {
 		t.Errorf("Already done. %s", err)
 	}
 }
-
 
 func TestGetLeftDirectionFromNorth(t *testing.T) {
 	var s ShapeExtractor
