@@ -526,7 +526,7 @@ func TestOutlinePolygonPartial(t *testing.T) {
  * |  X |  X |  X |  X | X | X |
  * |  X |  0 |  1 |  X | 3 | 4 |
  * | 16 |  c |  c |  2 | c | 5 |
- * | 15 |  X |  X |  c | c | 6 |  // Has different color in middle
+ * | 15 |  X |  X |  c | c | 6 |  // Has base color in middle
  * | 14 |  c |  c |  c | c | 7 |
  * | 13 | 12 | 11 | 10 | 9 | 8 |
  */
@@ -556,8 +556,8 @@ func TestMarkPolygonAlreadyDonePartial(t *testing.T) {
 	}
 	colorGrid[0][1] = otherColor
 	colorGrid[3][1] = otherColor
-	colorGrid[1][2] = otherColor
-	colorGrid[2][2] = otherColor
+	colorGrid[1][3] = otherColor
+	colorGrid[2][3] = otherColor
 
 	s.Init(colorGrid)
 	outlinePoints := [][2]int{
@@ -584,9 +584,9 @@ func TestMarkPolygonAlreadyDonePartial(t *testing.T) {
 
 	results := s.alreadyDone
 	expected := [][]bool{
-		{false, false, true, true, true, true}, // first column
-		{false, true, false, true, true, true}, // second column
-		{false, true, false, true, true, true},
+		{false, false, true, true, true, true},  //  column 0
+		{false, true, true, false, false, true}, //  column 1
+		{false, true, true, false, false, true},
 		{false, false, true, true, true, true},
 		{false, true, true, true, true, true},
 		{false, true, true, true, true, true},
@@ -1066,7 +1066,9 @@ func TestGetSVGTextLarge(t *testing.T) {
   <polygon class="#00B43C" points="12,0 17,0 17,11 12,11 12,1 " stroke="#00B43C" fill="#00B43C" />
   <polygon class="#0000DC" points="6,2 11,7 11,11 6,11 6,3 " stroke="#0000DC" fill="#0000DC" />
   <polygon class="#EB0000" points="14,4 15,4 15,7 14,7 14,6 14,5 " stroke="#EB0000" fill="#EB0000" />
+  <polygon class="#00B43C" points="14,8 15,8 15,10 14,10 14,9 " stroke="#00B43C" fill="#00B43C" />
   <line class="#0000DC" x1="3" y1="4" x2="3" y2="7" stroke="#0000DC" fill="#0000DC" />
+  <line class="#EB0000" x1="3" y1="8" x2="3" y2="10" stroke="#EB0000" fill="#EB0000" />  
  </g>
 </svg>`
 

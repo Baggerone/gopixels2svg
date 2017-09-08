@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-type evaluatorFunc func(int, int, [4]uint8) (bool, int, int)
+type evaluatorFunc func(int, int, [4]uint8) bool
 
 type Line struct {
 	ColorRGBA [4]uint8
@@ -106,97 +106,97 @@ func (s *ShapeExtractor) cellIsAtBottom(rowY int) bool {
 func (s *ShapeExtractor) isNorthCellGood(
 	colX, rowY int,
 	color [4]uint8,
-) (bool, int, int) {
+) bool {
 	if s.cellIsAtTop(rowY) {
-		return false, 0, 0
+		return false
 	}
 	newCol, newRow := s.getCellInDirection(colX, rowY, 0)
 
-	return !s.isCellDoneOrDifferent(newCol, newRow, color), newCol, newRow
+	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
 
 func (s *ShapeExtractor) isNorthEastCellGood(
 	colX, rowY int,
 	color [4]uint8,
-) (bool, int, int) {
+) bool {
 	if s.cellIsAtTop(rowY) || s.cellIsAtRight(colX) {
-		return false, 0, 0
+		return false
 	}
 	newCol, newRow := s.getCellInDirection(colX, rowY, 1)
 
-	return !s.isCellDoneOrDifferent(newCol, newRow, color), newCol, newRow
+	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
 
 func (s *ShapeExtractor) isEastCellGood(
 	colX, rowY int,
 	color [4]uint8,
-) (bool, int, int) {
+) bool {
 	if s.cellIsAtRight(colX) {
-		return false, 0, 0
+		return false
 	}
 	newCol, newRow := s.getCellInDirection(colX, rowY, 2)
 
-	return !s.isCellDoneOrDifferent(newCol, newRow, color), newCol, newRow
+	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
 
 func (s *ShapeExtractor) isSouthEastCellGood(
 	colX, rowY int,
 	color [4]uint8,
-) (bool, int, int) {
+) bool {
 	if s.cellIsAtRight(colX) || s.cellIsAtBottom(rowY) {
-		return false, 0, 0
+		return false
 	}
 	newCol, newRow := s.getCellInDirection(colX, rowY, 3)
 
-	return !s.isCellDoneOrDifferent(newCol, newRow, color), newCol, newRow
+	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
 
 func (s *ShapeExtractor) isSouthCellGood(
 	colX, rowY int,
 	color [4]uint8,
-) (bool, int, int) {
+) bool {
 	if s.cellIsAtBottom(rowY) {
-		return false, 0, 0
+		return false
 	}
 	newCol, newRow := s.getCellInDirection(colX, rowY, 4)
 
-	return !s.isCellDoneOrDifferent(newCol, newRow, color), newCol, newRow
+	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
 
 func (s *ShapeExtractor) isSouthWestCellGood(
 	colX, rowY int,
 	color [4]uint8,
-) (bool, int, int) {
+) bool {
 	if s.cellIsAtBottom(rowY) || s.cellIsAtLeft(colX) {
-		return false, 0, 0
+		return false
 	}
 	newCol, newRow := s.getCellInDirection(colX, rowY, 5)
 
-	return !s.isCellDoneOrDifferent(newCol, newRow, color), newCol, newRow
+	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
 
 func (s *ShapeExtractor) isWestCellGood(
 	colX, rowY int,
 	color [4]uint8,
-) (bool, int, int) {
+) bool {
 	if s.cellIsAtLeft(colX) {
-		return false, 0, 0
+		return false
 	}
 	newCol, newRow := s.getCellInDirection(colX, rowY, 6)
 
-	return !s.isCellDoneOrDifferent(newCol, newRow, color), newCol, newRow
+	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
 
 func (s *ShapeExtractor) isNorthWestCellGood(
 	colX, rowY int,
 	color [4]uint8,
-) (bool, int, int) {
+) bool {
 	if s.cellIsAtLeft(colX) || s.cellIsAtTop(rowY) {
-		return false, 0, 0
+		return false
 	}
 	newCol, newRow := s.getCellInDirection(colX, rowY, 7)
 
-	return !s.isCellDoneOrDifferent(newCol, newRow, color), newCol, newRow
+	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
 
 /*
@@ -236,7 +236,7 @@ func (s *ShapeExtractor) directionToGoodNeighboringCell(
 	newDirection := s.getLeftDirection(direction)
 	for index := 0; index < 7; index++ {
 		evaluator := s.neighborEvaluators[newDirection]
-		isGood, _, _ := evaluator(colX, rowY, color)
+		isGood := evaluator(colX, rowY, color)
 		if isGood {
 			return newDirection
 		}
@@ -357,7 +357,7 @@ func (s *ShapeExtractor) GetLine(startCol, startRow int) Line {
 
 	for {
 		nextCol, nextRow := s.getCellInDirection(prevCol, prevRow, direction)
-		isGood, _, _ := neighborEvaluator(prevCol, prevRow, color)
+		isGood := neighborEvaluator(prevCol, prevRow, color)
 		if !isGood {
 			break
 		}
@@ -424,33 +424,6 @@ func (s *ShapeExtractor) GetPolygonsFromCell(
 	return allPolygons
 }
 
-func (s *ShapeExtractor) markAlreadyDoneInDirection(
-	polygonOutline [][2]int,
-	colX, rowY int,
-	color [4]uint8,
-	direction int,
-) {
-	s.setNeighborEvaluators()
-
-	evaluator := s.neighborEvaluators[direction]
-
-	for {
-		isGood, nextCol, nextRow := evaluator(colX, rowY, color)
-		if !isGood {
-			return
-		}
-
-		if IsPointIn2IntArray(nextCol, nextRow, polygonOutline) {
-			return
-		}
-
-		s.alreadyDone[nextCol][nextRow] = true
-		colX = nextCol
-		rowY = nextRow
-	}
-
-}
-
 /*
  * Given a polygon with an outline starting at a certain cell, mark
  * all its points (outline and internal) as "alreadyDone".
@@ -472,14 +445,16 @@ func (s *ShapeExtractor) markPolygonAlreadyDone(polygonOutline [][2]int) {
 		nextCol, nextRow := split2Int(nextPoint)
 		s.alreadyDone[nextCol][nextRow] = true
 
-		for direction := 0; direction <= 7; direction++ {
-			s.markAlreadyDoneInDirection(
-				polygonOutline,
-				nextCol,
-				nextRow,
-				color,
-				direction,
-			)
+		for lowerRow := nextRow + 1; lowerRow < s.RowCount; lowerRow++ {
+			if color != s.grid[nextCol][lowerRow] {
+				break
+			}
+
+			if IsPointIn2IntArray(nextCol, lowerRow, polygonOutline) {
+				break
+			}
+
+			s.alreadyDone[nextCol][lowerRow] = true
 		}
 	}
 	// s.showAlreadyDone()
