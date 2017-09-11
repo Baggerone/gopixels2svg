@@ -457,8 +457,8 @@ func (s *ShapeExtractor) GetPolygonsFromCell(
 }
 
 /*
- *  Check the cells to the up, right, down and left.  If they are the
- * same color and not yet done, add them to the queue.
+ *  Check the neighboring cells.  If they are the
+ * same color and not yet done, mark them as done and add them to the queue.
  */
 func (s *ShapeExtractor) addNeighborsToQueue(colX, rowY int, color [4]uint8) {
 
@@ -488,11 +488,7 @@ func (s *ShapeExtractor) markCellQueueDone(color [4]uint8) {
 
 	colX, rowY := split2Int(s.cellQueue[0])
 	s.addNeighborsToQueue(colX, rowY, color)
-	if len(s.cellQueue) <= 1 {
-		s.cellQueue = nil
-	} else {
-		s.cellQueue = s.cellQueue[1:]
-	}
+	s.cellQueue = s.cellQueue[1:]
 
 	s.markCellQueueDone(color)
 }
@@ -506,8 +502,8 @@ func (s *ShapeExtractor) markCellQueueDone(color [4]uint8) {
  *   left-most cell of that row.
  *
  * Marks each point on the outline as already done and also adds the
- * cell to their "right" to a queue for continuing the process of
- * marking as done.
+ * cell to their "right" and "angled right" to a queue for continuing 
+ * the process of marking as done.
  *
  */
 func (s *ShapeExtractor) markPolygonAlreadyDone(polygonOutline [][2]int) {
