@@ -502,7 +502,7 @@ func (s *ShapeExtractor) markCellQueueDone(color [4]uint8) {
  *   left-most cell of that row.
  *
  * Marks each point on the outline as already done and also adds the
- * cell to their "right" and "angled right" to a queue for continuing 
+ * cell to their "right" and "angled right" to a queue for continuing
  * the process of marking as done.
  *
  */

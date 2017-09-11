@@ -171,7 +171,7 @@ func compareSliceofStrings(results, expected []string) string {
  *  Five columns, four rows - all almost black
  */
 func getColorGrid() [][][4]uint8 {
-    black := [4]uint8{1, 1, 1, 1}
+	black := [4]uint8{1, 1, 1, 1}
 	grid := [][][4]uint8{
 		{black, black, black, black}, // Column 0
 		{black, black, black, black}, // Column 1
