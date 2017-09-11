@@ -142,14 +142,16 @@ func main() {
 	s.Init(sailboat())
 	s.WriteSVGToFile("example_sailboat.html")
 
-	if colorGrid, err = ReadPNGPixels("test1.png"); err != nil {
-		addError(&errors, " Error: test1.png  ... ", err)
-	} else {
+	if colorGrid, err = ReadPNGPixels("test1.png"); err == nil {
 		s.Init(colorGrid)
 		s.WriteSVGToFile("example_test1.html")
 	}
 
 	args := os.Args[1:]
+    if len(args) <= 0 {
+        println("\n To create from other png files, just add their names as command line arguments.")
+    }
+    
 	for _, nextInput := range args {
 		if strings.HasSuffix(nextInput, ".png") {
 			colorGrid, err := ReadPNGPixels(nextInput)
