@@ -79,22 +79,23 @@ func convertToUint8(rgbTone uint32) uint8 {
 	return uint8(rgbTone / 0x101)
 }
 
-func ReadPNGPixels(filePath string) [][][4]uint8 {
+func ReadPNGPixels(filePath string) ([][][4]uint8, error) {
+
+    var infile *os.File
+    var err error
+    var src image.Image
+
 	// fmt.Println("\nReading \n", filePath)
-	infile, err := os.Open(filePath)
-	if err != nil {
-		// replace this with good error handling
-		panic(err)
+	if infile, err = os.Open(filePath); err != nil {
+		return nil, err
 	}
 
 	defer infile.Close()
 
 	// Decode will figure out what type of image is in the file on its own.
 	// We just have to be sure all the image packages we want are imported.
-	src, _, err := image.Decode(infile)
-	if err != nil {
-		// replace this with good error handling
-		panic(err)
+	if src, _, err = image.Decode(infile); err != nil {
+		return nil, err
 	}
 
 	colorGrid := [][][4]uint8{}
@@ -114,7 +115,14 @@ func ReadPNGPixels(filePath string) [][][4]uint8 {
 		colorGrid = append(colorGrid, newCol)
 	}
 
-	return colorGrid
+	return colorGrid, nil
+}
+
+func addError(errors *[]string, summary string, err error) {
+	*errors = append(
+		*errors,
+		strings.Join([]string{summary, err.Error()}, " "),
+	)
 }
 
 /*
@@ -126,20 +134,39 @@ func ReadPNGPixels(filePath string) [][][4]uint8 {
  *   That will create corresponding *.html files.
  */
 func main() {
+	errors := []string{}
 	var s pixels2svg.ShapeExtractor
-
+    var colorGrid[][][4]uint8
+    var err error
+    
 	s.Init(sailboat())
 	s.WriteSVGToFile("example_sailboat.html")
 
-	s.Init(ReadPNGPixels("test1.png"))
-	s.WriteSVGToFile("example_test1.html")
+	if colorGrid, err = ReadPNGPixels("test1.png"); err != nil {
+		addError(&errors, " Error: test1.png  ... ", err)
+	} else {
+		s.Init(colorGrid)
+		s.WriteSVGToFile("example_test1.html")
+	}
 
 	args := os.Args[1:]
 	for _, nextInput := range args {
 		if strings.HasSuffix(nextInput, ".png") {
-			s.Init(ReadPNGPixels(nextInput))
+			colorGrid, err := ReadPNGPixels(nextInput)
+			if err != nil {
+				addError(&errors, strings.Join([]string{" Error: ", nextInput, "  ... "}, ""), err)
+				continue
+			}
+			s.Init(colorGrid)
 			newName := strings.TrimSuffix(nextInput, ".png") + ".html"
 			s.WriteSVGToFile(newName)
+		}
+	}
+
+	if len(errors) > 0 {
+		println("\nRan into error(s) ...")
+		for _, nextErr := range errors {
+			println(nextErr)
 		}
 	}
 }
