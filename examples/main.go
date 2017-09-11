@@ -148,10 +148,10 @@ func main() {
 	}
 
 	args := os.Args[1:]
-    if len(args) <= 0 {
-        println("\n To create from other png files, just add their names as command line arguments.")
-    }
-    
+	if len(args) <= 0 {
+		println("\n To create from other png files, just add their names as command line arguments.")
+	}
+
 	for _, nextInput := range args {
 		if strings.HasSuffix(nextInput, ".png") {
 			colorGrid, err := ReadPNGPixels(nextInput)
