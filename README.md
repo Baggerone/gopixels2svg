@@ -21,3 +21,6 @@ You can also copy *.png files into the `examples` folder and include their names
   
 That will create corresponding *.html files.
 
+## Binaries ##
+The dist folder includes binaries for different operating systems.
+They allow you to convert *.png files to svg by including the png file name(s) as command line arguments.
