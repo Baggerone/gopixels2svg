@@ -81,9 +81,9 @@ func convertToUint8(rgbTone uint32) uint8 {
 
 func ReadPNGPixels(filePath string) ([][][4]uint8, error) {
 
-    var infile *os.File
-    var err error
-    var src image.Image
+	var infile *os.File
+	var err error
+	var src image.Image
 
 	// fmt.Println("\nReading \n", filePath)
 	if infile, err = os.Open(filePath); err != nil {
@@ -136,9 +136,9 @@ func addError(errors *[]string, summary string, err error) {
 func main() {
 	errors := []string{}
 	var s pixels2svg.ShapeExtractor
-    var colorGrid[][][4]uint8
-    var err error
-    
+	var colorGrid [][][4]uint8
+	var err error
+
 	s.Init(sailboat())
 	s.WriteSVGToFile("example_sailboat.html")
 
