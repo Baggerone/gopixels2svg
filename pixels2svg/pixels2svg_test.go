@@ -167,38 +167,17 @@ func compareSliceofStrings(results, expected []string) string {
 	return ""
 }
 
+/*
+ *  Five columns, four rows - all almost black
+ */
 func getColorGrid() [][][4]uint8 {
+    black := [4]uint8{1, 1, 1, 1}
 	grid := [][][4]uint8{
-		{ // First column
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-		},
-		{ // Second column
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-		},
-		{ // Third column
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-		},
-		{ // Fourth column
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-		},
-		{ // Fifth column
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-			{1, 1, 1, 1},
-		},
+		{black, black, black, black}, // Column 0
+		{black, black, black, black}, // Column 1
+		{black, black, black, black}, // Column 2
+		{black, black, black, black}, // Column 3
+		{black, black, black, black}, // Column 4
 	}
 	return grid
 }
@@ -535,33 +514,6 @@ func TestOutlinePolygonPartial(t *testing.T) {
 	err := compareOutlinePoints(results, expected)
 	if err != "" {
 		t.Errorf("Polygon outline. %s", err)
-	}
-}
-
-func TestAddNeighborsToQueueLeftCorner(t *testing.T) {
-	var s ShapeExtractor
-
-	s.setNeighborEvaluators()
-
-	gridColors := getBigColorGrid()
-	s.Init(gridColors)
-	s.cellQueue = [][2]int{}
-	red := s.grid[0][0]
-
-	// outline points
-	s.alreadyDone[0][0] = true
-	s.alreadyDone[1][0] = true
-	s.alreadyDone[2][0] = true
-	s.alreadyDone[0][1] = true
-	s.alreadyDone[0][2] = true
-
-	s.addNeighborsToQueue(1, 1, red)
-	results := s.cellQueue
-	expected := [][2]int{{2, 1}, {2, 2}, {1, 2}}
-
-	err := compareOutlinePoints(results, expected)
-	if err != "" {
-		t.Errorf("Cell Queue. %s", err)
 	}
 }
 
