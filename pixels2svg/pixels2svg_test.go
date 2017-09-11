@@ -1068,7 +1068,7 @@ func TestGetSVGTextLarge(t *testing.T) {
   <polygon class="#EB0000" points="14,4 15,4 15,7 14,7 14,6 14,5 " stroke="#EB0000" fill="#EB0000" />
   <polygon class="#00B43C" points="14,8 15,8 15,10 14,10 14,9 " stroke="#00B43C" fill="#00B43C" />
   <line class="#0000DC" x1="3" y1="4" x2="3" y2="7" stroke="#0000DC" fill="#0000DC" />
-  <line class="#EB0000" x1="3" y1="8" x2="3" y2="10" stroke="#EB0000" fill="#EB0000" />  
+  <line class="#EB0000" x1="3" y1="8" x2="3" y2="10" stroke="#EB0000" fill="#EB0000" />
  </g>
 </svg>`
 
