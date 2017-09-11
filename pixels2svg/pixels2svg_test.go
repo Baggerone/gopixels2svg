@@ -203,6 +203,22 @@ func getColorGrid() [][][4]uint8 {
 	return grid
 }
 
+/*
+ *    0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
+ *  0 r  r  r  r  r  r  y  y  y  y  y  y  g  g  g  g  g  g
+ *  1 r  r  r  r  r  r  b  y  y  y  y  y  g  g  g  g  g  g
+ *  2 r  r  r  r  r  r  b  b  y  y  y  y  g  g  g  g  g  g
+ *  3 r  r  r  r  r  r  b  b  b  y  y  y  g  g  g  g  g  g
+ *  4 r  r  r  b  r  r  b  b  b  b  y  y  g  g  r  r  g  g
+ *  5 r  r  r  b  r  r  b  b  b  b  b  y  g  g  r  r  g  g
+ *  6 r  r  r  b  r  r  b  b  b  b  b  b  g  g  r  r  g  g
+ *  7 r  r  r  b  r  r  b  b  b  b  b  b  g  g  r  r  g  g
+ *  8 r  r  r  r  r  r  b  b  b  b  b  b  g  g  g  g  g  g
+ *  9 r  r  r  r  r  r  b  b  b  b  b  b  g  g  g  g  g  g
+ * 10 r  r  r  r  r  r  b  b  b  b  b  b  g  g  g  g  g  g
+ * 11 r  r  r  r  r  r  b  b  b  b  b  b  g  g  g  g  g  g
+ * 12
+ */
 func getBigColorGrid() [][][4]uint8 {
 	gridColors := [][][4]uint8{}
 
@@ -522,6 +538,112 @@ func TestOutlinePolygonPartial(t *testing.T) {
 	}
 }
 
+func TestAddNeighborsToQueueLeftCorner(t *testing.T) {
+	var s ShapeExtractor
+
+	s.setNeighborEvaluators()
+
+	gridColors := getBigColorGrid()
+	s.Init(gridColors)
+	s.cellQueue = [][2]int{}
+	red := s.grid[0][0]
+
+	// outline points
+	s.alreadyDone[0][0] = true
+	s.alreadyDone[1][0] = true
+	s.alreadyDone[2][0] = true
+	s.alreadyDone[0][1] = true
+	s.alreadyDone[0][2] = true
+
+	s.addNeighborsToQueue(1, 1, red)
+	results := s.cellQueue
+	expected := [][2]int{{2, 1}, {2, 2}, {1, 2}}
+
+	err := compareOutlinePoints(results, expected)
+	if err != "" {
+		t.Errorf("Cell Queue. %s", err)
+	}
+}
+
+func TestAddNeighborsToQueueTopEdge(t *testing.T) {
+	var s ShapeExtractor
+
+	s.setNeighborEvaluators()
+
+	gridColors := getBigColorGrid()
+	s.Init(gridColors)
+	s.cellQueue = [][2]int{}
+	red := s.grid[0][0]
+
+	// outline and already done points
+	s.alreadyDone[2][0] = true
+	s.alreadyDone[3][0] = true
+	s.alreadyDone[4][0] = true
+	s.alreadyDone[2][1] = true
+
+	s.addNeighborsToQueue(3, 1, red)
+	results := s.cellQueue
+	expected := [][2]int{{4, 1}, {4, 2}, {3, 2}, {2, 2}}
+
+	err := compareOutlinePoints(results, expected)
+	if err != "" {
+		t.Errorf("Cell Queue. %s", err)
+	}
+}
+
+func TestAddNeighborsToQueueTopRightCorner(t *testing.T) {
+	var s ShapeExtractor
+
+	s.setNeighborEvaluators()
+
+	gridColors := getBigColorGrid()
+	s.Init(gridColors)
+	s.cellQueue = [][2]int{}
+	red := s.grid[0][0]
+
+	s.alreadyDone[3][0] = true
+	s.alreadyDone[4][0] = true
+	s.alreadyDone[5][0] = true
+	s.alreadyDone[5][1] = true
+	s.alreadyDone[5][2] = true
+	s.alreadyDone[3][1] = true
+
+	s.addNeighborsToQueue(4, 1, red) // (5, 0) and (5, 1) are on outline
+	results := s.cellQueue
+	expected := [][2]int{{4, 2}, {3, 2}}
+
+	err := compareOutlinePoints(results, expected)
+	if err != "" {
+		t.Errorf("Cell Queue. %s", err)
+	}
+}
+
+func TestAddNeighborsToQueueByInnerDiff(t *testing.T) {
+	var s ShapeExtractor
+
+	s.setNeighborEvaluators()
+
+	gridColors := getBigColorGrid()
+	s.Init(gridColors)
+	s.cellQueue = [][2]int{}
+	red := s.grid[0][0]
+
+	s.alreadyDone[2][2] = true
+	s.alreadyDone[3][2] = true
+	s.alreadyDone[4][2] = true
+	s.alreadyDone[5][2] = true
+	s.alreadyDone[5][3] = true
+
+	s.addNeighborsToQueue(3, 3, red)
+	results := s.cellQueue
+	expected := [][2]int{{4, 3}, {4, 4}, {2, 4}, {2, 3}}
+
+	err := compareOutlinePoints(results, expected)
+	if err != "" {
+		t.Errorf("Cell Queue. %s", err)
+	}
+}
+
 /*
  * |  X |  X |  X |  X | X | X |
  * |  X |  0 |  1 |  X | 3 | 4 |
@@ -584,9 +706,9 @@ func TestMarkPolygonAlreadyDonePartial(t *testing.T) {
 
 	results := s.alreadyDone
 	expected := [][]bool{
-		{false, false, true, true, true, true},  //  column 0
-		{false, true, true, false, false, true}, //  column 1
-		{false, true, true, false, false, true},
+		{false, false, true, true, true, true}, //  column 0
+		{false, true, true, false, true, true}, //  column 1
+		{false, true, true, false, true, true},
 		{false, false, true, true, true, true},
 		{false, true, true, true, true, true},
 		{false, true, true, true, true, true},
@@ -1066,9 +1188,7 @@ func TestGetSVGTextLarge(t *testing.T) {
   <polygon class="#00B43C" points="12,0 17,0 17,11 12,11 12,1 " stroke="#00B43C" fill="#00B43C" />
   <polygon class="#0000DC" points="6,2 11,7 11,11 6,11 6,3 " stroke="#0000DC" fill="#0000DC" />
   <polygon class="#EB0000" points="14,4 15,4 15,7 14,7 14,6 14,5 " stroke="#EB0000" fill="#EB0000" />
-  <polygon class="#00B43C" points="14,8 15,8 15,10 14,10 14,9 " stroke="#00B43C" fill="#00B43C" />
   <line class="#0000DC" x1="3" y1="4" x2="3" y2="7" stroke="#0000DC" fill="#0000DC" />
-  <line class="#EB0000" x1="3" y1="8" x2="3" y2="10" stroke="#EB0000" fill="#EB0000" />
  </g>
 </svg>`
 

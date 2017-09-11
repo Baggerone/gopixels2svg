@@ -28,6 +28,7 @@ type ShapeExtractor struct {
 	ColCount           int
 	RowCount           int
 	neighborEvaluators [8]evaluatorFunc
+	cellQueue          [][2]int
 }
 
 func (s *ShapeExtractor) showAlreadyDone() {
@@ -215,10 +216,41 @@ func (s *ShapeExtractor) getLeftDirection(direction int) int {
  *  get the direction slightly to its right.
  */
 func (s *ShapeExtractor) getAngledRightDirection(direction int) int {
-	if direction >= 7 {
+	return (direction + 1) % 8
+}
+
+/*
+ *  Assuming an outline walker is headed a certain direction,
+ *  get the direction to the right (90 degrees).
+ */
+func (s *ShapeExtractor) getRight90Direction(direction int) int {
+	return (direction + 2) % 8
+}
+
+func (s *ShapeExtractor) getLatestDirection(colX1, rowY1, colX2, rowY2 int) int {
+	colDiff := colX2 - colX1
+	rowDiff := rowY2 - rowY1
+
+	switch {
+	case (colDiff == 0 && rowDiff < 0):
 		return 0
+	case (colDiff > 0 && rowDiff < 0):
+		return 1
+	case (colDiff > 0 && rowDiff == 0):
+		return 2
+	case (colDiff > 0 && rowDiff > 0):
+		return 3
+	case (colDiff == 0 && rowDiff > 0):
+		return 4
+	case (colDiff < 0 && rowDiff > 0):
+		return 5
+	case (colDiff < 0 && rowDiff == 0):
+		return 6
+	case (colDiff < 0 && rowDiff < 0):
+		return 7
 	}
-	return direction + 1
+
+	return 0
 }
 
 /*
@@ -425,6 +457,47 @@ func (s *ShapeExtractor) GetPolygonsFromCell(
 }
 
 /*
+ *  Check the cells to the up, right, down and left.  If they are the
+ * same color and not yet done, add them to the queue.
+ */
+func (s *ShapeExtractor) addNeighborsToQueue(colX, rowY int, color [4]uint8) {
+
+	for direction := 0; direction <= 7; direction += 1 {
+
+		evaluator := s.neighborEvaluators[direction]
+		isGood := evaluator(colX, rowY, color)
+
+		if isGood {
+			nextCol, nextRow := s.getCellInDirection(colX, rowY, direction)
+			s.alreadyDone[nextCol][nextRow] = true
+			s.cellQueue = append(s.cellQueue, [2]int{nextCol, nextRow})
+		}
+	}
+}
+
+/*
+ *  For each cell in the queue, mark it as already done
+ * and remove it from the queue, but also
+ * add its neighbors to the queue if they have the same color
+ * and aren't done yet
+ */
+func (s *ShapeExtractor) markCellQueueDone(color [4]uint8) {
+	if len(s.cellQueue) < 1 {
+		return
+	}
+
+	colX, rowY := split2Int(s.cellQueue[0])
+	s.addNeighborsToQueue(colX, rowY, color)
+	if len(s.cellQueue) <= 1 {
+		s.cellQueue = nil
+	} else {
+		s.cellQueue = s.cellQueue[1:]
+	}
+
+	s.markCellQueueDone(color)
+}
+
+/*
  * Given a polygon with an outline starting at a certain cell, mark
  * all its points (outline and internal) as "alreadyDone".
  *
@@ -432,31 +505,61 @@ func (s *ShapeExtractor) GetPolygonsFromCell(
  * Assumes first point is the highest row of the outline and the
  *   left-most cell of that row.
  *
- * From each point on the outline of the polygon, marks it and all cells
- * below it as already done until it runs into another cell of the outline
- * or a cell of a different color
+ * Marks each point on the outline as already done and also adds the
+ * cell to their "right" to a queue for continuing the process of
+ * marking as done.
  *
  */
 func (s *ShapeExtractor) markPolygonAlreadyDone(polygonOutline [][2]int) {
-	firstCol, firstRow := split2Int(polygonOutline[0])
-	color := s.grid[firstCol][firstRow]
 
-	for _, nextPoint := range polygonOutline {
+	if len(polygonOutline) < 3 {
+		return
+	}
+
+	s.setNeighborEvaluators()
+	s.cellQueue = [][2]int{}
+
+	// deal with first cell on its own
+	prevCol, prevRow := split2Int(polygonOutline[0])
+	color := s.grid[prevCol][prevRow]
+	s.alreadyDone[prevCol][prevRow] = true
+
+	// Walk through outline and add cells to the right to the queue
+	// of cells to mark as already done
+	for _, nextPoint := range polygonOutline[1:] {
 		nextCol, nextRow := split2Int(nextPoint)
+		direction := s.getLatestDirection(prevCol, prevRow, nextCol, nextRow)
 		s.alreadyDone[nextCol][nextRow] = true
 
-		for lowerRow := nextRow + 1; lowerRow < s.RowCount; lowerRow++ {
-			if color != s.grid[nextCol][lowerRow] {
-				break
-			}
+		// Get its cell to the "right" and if necessary, add to the queue
+		innerDirection := s.getRight90Direction(direction)
 
-			if IsPointIn2IntArray(nextCol, lowerRow, polygonOutline) {
-				break
-			}
+		evaluator := s.neighborEvaluators[innerDirection]
+		isGood := evaluator(nextCol, nextRow, color)
+		if isGood {
+			innerCol, innerRow := s.getCellInDirection(nextCol, nextRow, innerDirection)
+			s.alreadyDone[innerCol][innerRow] = true
 
-			s.alreadyDone[nextCol][lowerRow] = true
+			s.cellQueue = append(s.cellQueue, [2]int{innerCol, innerRow})
 		}
+
+		// Get its cell slightly to the "right" and if necessary, add to the queue
+		innerDirection = s.getAngledRightDirection(direction)
+
+		evaluator = s.neighborEvaluators[innerDirection]
+		isGood = evaluator(nextCol, nextRow, color)
+		if isGood {
+			innerCol, innerRow := s.getCellInDirection(nextCol, nextRow, innerDirection)
+			s.alreadyDone[innerCol][innerRow] = true
+
+			s.cellQueue = append(s.cellQueue, [2]int{innerCol, innerRow})
+		}
+
+		prevCol = nextCol
+		prevRow = nextRow
 	}
+
+	s.markCellQueueDone(color)
 	// s.showAlreadyDone()
 	// println("\n")
 }
