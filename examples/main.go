@@ -147,6 +147,11 @@ func main() {
 		s.WriteSVGToFile("example_test1.html")
 	}
 
+	if colorGrid, err = ReadPNGPixels("test2.png"); err == nil {
+		s.Init(colorGrid)
+		s.WriteSVGToFile("example_test2.html")
+	}
+
 	args := os.Args[1:]
 	if len(args) <= 0 {
 		println("\n To create from other png files, just add their names as command line arguments.")
