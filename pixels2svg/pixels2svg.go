@@ -311,8 +311,10 @@ func (s *ShapeExtractor) getCellInDirection(colX, rowY, nextDirection int) (int,
 	return 0, 0
 }
 
+// TODO: This does not account for rings that surround a different color
+
 /*
- * Get the outline of a polygon from a starting cell.
+ * OutlinePolygon gets the outline of a polygon from a starting cell.
  * Don't use cells of a different color or that have been used previously
  *
  * Trace the outline as if you're a person walking a certain direction

@@ -182,6 +182,7 @@ func getColorGrid() [][][4]uint8 {
 	return grid
 }
 
+// TODO: This should cause a failure because of the internal reds from 7, 7, but it doesn't
 /*
  *    0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
  *  0 r  r  r  r  r  r  y  y  y  y  y  y  g  g  g  g  g  g
@@ -191,10 +192,10 @@ func getColorGrid() [][][4]uint8 {
  *  4 r  r  r  b  r  r  b  b  b  b  y  y  g  g  r  r  g  g
  *  5 r  r  r  b  r  r  b  b  b  b  b  y  g  g  r  r  g  g
  *  6 r  r  r  b  r  r  b  b  b  b  b  b  g  g  r  r  g  g
- *  7 r  r  r  b  r  r  b  b  b  b  b  b  g  g  r  r  g  g
- *  8 r  r  r  r  r  r  b  b  b  b  b  b  g  g  g  g  g  g
- *  9 r  r  r  r  r  r  b  b  b  b  b  b  g  g  g  g  g  g
- * 10 r  r  r  r  r  r  b  b  b  b  b  b  g  g  g  g  g  g
+ *  7 r  r  r  b  r  r  b  r  r  b  b  b  g  g  r  r  g  g
+ *  8 r  r  r  r  r  r  b  r  r  b  b  b  g  g  g  g  g  g
+ *  9 r  r  r  r  r  r  b  r  r  b  b  b  g  g  g  g  g  g
+ * 10 r  r  r  r  r  r  b  r  r  b  b  b  g  g  g  g  g  g
  * 11 r  r  r  r  r  r  b  b  b  b  b  b  g  g  g  g  g  g
  * 12
  */
