@@ -7,29 +7,29 @@ import (
 	"sort"
 )
 
-func Red() Color {
-	return Color{220, 0, 0, 0}
+func Red() GridCell {
+	return GridCell{Color: Color{220, 0, 0, 0}}
 }
 
-func Green() Color {
-	return Color{0, 220, 0, 0}
+func Green() GridCell {
+	return GridCell{Color: Color{0, 220, 0, 0}}
 }
 
-func Blue() Color {
-	return Color{0, 0, 220, 0}
+func Blue() GridCell {
+	return GridCell{Color: Color{0, 0, 220, 0}}
 }
 
 
-func getRGBColorFromString(colorCode string) Color {
+func getRGBColorFromString(colorCode string) GridCell {
 
-	colors := map[string]Color{
+	colors := map[string]GridCell{
 		"r": Red(),
 		"g": Green(),
 		"b": Blue(),
 	}
 
 	rgbColor, OK := colors[strings.Trim(colorCode, " ")]; if ! OK {
-		return Color{0, 0, 0, 0}
+		return GridCell{Color: Color{0, 0, 0, 0}}
 	}
 
 	return rgbColor
@@ -41,16 +41,16 @@ func transposeGrid(grid Grid) Grid {
 	colCount := len(grid[0])
 
 	for i := 0; i < colCount; i++ {
-		newCol := []Color{}
+		newCol := []GridCell{}
 		for j := 0; j < rowCount; j++ {
-			newCol = append(newCol, Color{})
+			newCol = append(newCol, GridCell{})
 		}
 		newGrid = append(newGrid, newCol)
 	}
 
-	for rowIndex, row := range grid{
+	for rowIndex, row := range grid {
 		for colIndex, colValue := range row {
-			newGrid[colIndex][rowIndex] = colValue
+			newGrid[colIndex][rowIndex].Color = colValue.Color
 		}
 	}
 	return newGrid
@@ -59,12 +59,12 @@ func transposeGrid(grid Grid) Grid {
 // initGrid expects a multi-line string of single characters separated by spaces
 // representing colored cells
 // Its return grid is a slice of columns each having a slice of colors for the rows
-func initGrid(textGrid string) [][]Color {
-	grid := [][]Color{}
+func initGrid(textGrid string) [][]GridCell {
+	grid := [][]GridCell{}
 	rows := strings.Split(textGrid, "\n")
 
 	for _, row := range rows{
-		gridRow := []Color{}
+		gridRow := []GridCell{}
 		cells := strings.Split(row, ".")
 		if len(cells) <= 1 {
 			continue
@@ -78,7 +78,7 @@ func initGrid(textGrid string) [][]Color {
 	return transposeGrid(grid)
 }
 
-func compareGrids(results, expected [][]Color) string {
+func compareGrids(results, expected [][]GridCell) string {
 	if len(results) != len(expected) {
 		return fmt.Sprintf(
 			"Wrong number of columns. Expected %d, but got %d.\n%v",
@@ -99,9 +99,9 @@ func compareGrids(results, expected [][]Color) string {
 
 	for colIndex, expectedCol := range expected {
 		for rowIndex, expectedRowValue := range expectedCol {
-			if expectedRowValue != results[colIndex][rowIndex] {
+			if expectedRowValue.Color != results[colIndex][rowIndex].Color {
 				return fmt.Sprintf(
-					"Wrong value at column %d row %d. Expected %v, but got %d.\n%v",
+					"Wrong value at column %d row %d. Expected %v, but got %v.\n%v",
 					colIndex,
 					rowIndex,
 					expectedRowValue,
@@ -464,7 +464,12 @@ b.r.g`
 	startCol := 0
 	startRow := 1
 
-	results := findRowOfLowerCellInStartingColumn(startCol, startRow, grid, grid[startCol][startRow])
+	results := findRowOfLowerCellInStartingColumn(
+		startCol,
+		startRow,
+		grid,
+		grid[startCol][startRow].Color,
+	)
 	expected := startRow
 
 	if results != expected {
@@ -483,7 +488,12 @@ b.r.g`
 	startCol := 1
 	startRow := 1
 
-	results := findRowOfLowerCellInStartingColumn(startCol, startRow, grid, grid[startCol][startRow])
+	results := findRowOfLowerCellInStartingColumn(
+		startCol,
+		startRow,
+		grid,
+		grid[startCol][startRow].Color,
+	)
 	expected := 2
 
 	if results != expected {
@@ -504,7 +514,12 @@ b.r.g`
 	startCol := 1
 	startRow := 0
 
-	results := findRowOfLowerCellInStartingColumn(startCol, startRow, grid, grid[startCol][startRow])
+	results := findRowOfLowerCellInStartingColumn(
+		startCol,
+		startRow,
+		grid,
+		grid[startCol][startRow].Color,
+	)
 	expected := 3
 
 	if results != expected {
@@ -525,7 +540,12 @@ b.r.g`
 	startCol := 1
 	startRow := 0
 
-	results := findRowOfLowerCellInStartingColumn(startCol, startRow, grid, grid[startCol][startRow])
+	results := findRowOfLowerCellInStartingColumn(
+		startCol,
+		startRow,
+		grid,
+		grid[startCol][startRow].Color,
+	)
 	expected := 4
 
 	if results != expected {
@@ -680,7 +700,13 @@ b.r.g`
 	grid := initGrid(textGrid)
 	startCol := 2
 	startRow := 0
-	results, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(startCol, startRow, 4, grid, Red())
+	results, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
+		startCol,
+		startRow,
+		4,
+		grid,
+		Red(),
+	)
     if err != nil {
     	t.Errorf("Got unexpected error: %s", err)
     	return
@@ -705,7 +731,13 @@ b.r.r`
 	grid := initGrid(textGrid)
 	startCol := 2
 	startRow := 0
-	results, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(startCol, startRow, 4, grid, Red())
+	results, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
+		startCol,
+		startRow,
+		4,
+		grid,
+		Red(),
+	)
 	if err != nil {
 		t.Errorf("Got unexpected error: %s", err)
 		return
@@ -730,7 +762,13 @@ b.b.r`
 	grid := initGrid(textGrid)
 	startCol := 2
 	startRow := 0
-	results, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(startCol, startRow, 4, grid, Red())
+	results, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
+		startCol,
+		startRow,
+		4,
+		grid,
+		Red(),
+	)
 	if err != nil {
 		t.Errorf("Got unexpected error: %s", err)
 		return
@@ -754,7 +792,13 @@ b.r.g`
 	grid := initGrid(textGrid)
 	startCol := 2
 	startRow := 0
-	_, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(startCol, startRow, 4, grid, Red())
+	_, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
+		startCol,
+		startRow,
+		4,
+		grid,
+		Red(),
+	)
 	if err == nil {
 		t.Errorf("Expected error for no valid cells but didn't get one.")
 		return
@@ -774,7 +818,13 @@ b.b.r`
 	grid := initGrid(textGrid)
 	startCol := 2
 	startRow := 0
-	_, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(startCol, startRow, 3, grid, Red())
+	_, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
+		startCol,
+		startRow,
+		3,
+		grid,
+		Red(),
+	)
 	if err == nil {
 		t.Errorf("Expected error for no valid cells but didn't get one.")
 		return
@@ -1131,7 +1181,7 @@ b.b.r.b`
 	lowestRow := 2
 	shape := Shape{
 		References: map[int][]int{},
-		Color: Red(),
+		Color: Red().Color,
 	}
 	results := getShapeColumnsToRight(startCol, upperRow, lowestRow, grid, shape)
 
@@ -1163,7 +1213,7 @@ b.b.b.b`
 	lowestRow := 2
 	shape := Shape{
 		References: map[int][]int{},
-		Color: Red(),
+		Color: Red().Color,
 	}
 	results := getShapeColumnsToRight(startCol, upperRow, lowestRow, grid, shape)
 
@@ -1527,7 +1577,7 @@ b.r.b.b`
 	lowestRow := 2
 	shape := Shape{
 		References: map[int][]int{},
-		Color: Red(),
+		Color: Red().Color,
 	}
 	results := getShapeColumnsToLeft(startCol, upperRow, lowestRow, grid, shape)
 
@@ -1561,7 +1611,7 @@ b.b.b.b`
 	lowestRow := 2
 	shape := Shape{
 		References: map[int][]int{},
-		Color: Red(),
+		Color: Red().Color,
 	}
 	results := getShapeColumnsToLeft(startCol, upperRow, lowestRow, grid, shape)
 

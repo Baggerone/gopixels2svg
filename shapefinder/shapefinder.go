@@ -13,7 +13,17 @@ const NW = int(7)
 
 
 type Color [4]uint8
-type Grid [][]Color
+
+type GridCell struct {
+	AlreadyUsed bool
+	Color       Color
+}
+
+func (g GridCell) doesCellMatch(g2 GridCell) bool {
+	return !g2.AlreadyUsed && g.Color == g2.Color
+}
+
+type Grid [][]GridCell
 
 
 func (g Grid) cellIsAtRightOrLeft(checkToTheRight bool, column, row int) bool {
@@ -128,13 +138,13 @@ func isAdjacentCellInBounds(column, row int, grid Grid, direction int) bool {
 	return false
 }
 
-func isSameColorAdjacent(column, row int, grid Grid, shapeColor Color, directions ...int) bool {
+func isSameColorAdjacent(column, row int, grid Grid, shapeCell GridCell, directions ...int) bool {
 	for _, direction := range directions {
 		if ! isAdjacentCellInBounds(column, row, grid, direction) {
 			continue
 		}
 		adjacentColumn, adjacentRow := getCellReferenceInDirection(column, row, direction)
-		if shapeColor == grid[adjacentColumn][adjacentRow] {
+		if shapeCell.doesCellMatch(grid[adjacentColumn][adjacentRow]) {
 			return true
 		}
 	}
@@ -154,24 +164,24 @@ func isSameColorAdjacent(column, row int, grid Grid, shapeColor Color, direction
 //   - to the south and southeast are the same color or
 //   - to the east and southeast are the same color
 // Assumes the start position is not on the bottom row
-func makesTriangleToRight(column, row int, grid Grid, shapeColor Color) bool {
+func makesTriangleToRight(column, row int, grid Grid, shapeCell GridCell) bool {
 	if grid.cellIsAtRight(column, row) {
 		return false
 	}
 
 	_, southRow := getCellReferenceInDirection(column, row, S)
-	southColor := grid[column][southRow]
+	southCell := grid[column][southRow]
 
 	eastColumn, _ := getCellReferenceInDirection(column, row, E)
-	eastColor := grid[eastColumn][row]
+	eastCell := grid[eastColumn][row]
 
-	southEastColor := grid[eastColumn][southRow]
+	southEastCell := grid[eastColumn][southRow]
 
-	if southColor == shapeColor {
-		return eastColor == shapeColor || southEastColor == shapeColor
+	if shapeCell.doesCellMatch(southCell) {
+		return shapeCell.doesCellMatch(eastCell) || shapeCell.doesCellMatch(southEastCell)
 	}
 
-	return eastColor == shapeColor && southEastColor == shapeColor
+	return shapeCell.doesCellMatch(eastCell) && shapeCell.doesCellMatch(southEastCell)
 }
 
 //
@@ -183,28 +193,33 @@ func makesTriangleToRight(column, row int, grid Grid, shapeColor Color) bool {
 // True if the cells to the south and southwest are the same color
 // Assumes cell to the west has already been dealt with and is not usable
 // Assumes the start position is not on the bottom row
-func makesTriangleToLowerLeft(column, row int, grid Grid, shapeColor Color) bool {
+func makesTriangleToLowerLeft(column, row int, grid Grid, shapeCell GridCell) bool {
 	if grid.cellIsAtLeft(column, row) {
 		return false
 	}
 
 	_, southRow := getCellReferenceInDirection(column, row, S)
-	southColor := grid[column][southRow]
+	southCell := grid[column][southRow]
 
 	southWestColumn, _ := getCellReferenceInDirection(column, row, SW)
-	southWestColor := grid[southWestColumn][southRow]
+	southWestCell := grid[southWestColumn][southRow]
 
-	return southColor == shapeColor && southWestColor == shapeColor
+	return shapeCell.doesCellMatch(southCell) && shapeCell.doesCellMatch(southWestCell)
 }
 
 
 // Invalid if there are no same-colored contiguous cells that make a tiny triangle with it
+//  and if it has not already been dealt with
 // Assumes that there is not a same-colored cell to the left that is useable
-func isStartPositionValid(column, row int, grid Grid, shapeColor Color) bool {
+func isStartPositionValid(column, row int, grid Grid, shapeCell GridCell) bool {
+	if grid[column][row].AlreadyUsed {
+		return false
+	}
 	if grid.cellIsAtBottom(column, row) {
 		return false
 	}
-	return makesTriangleToRight(column, row, grid, shapeColor) || makesTriangleToLowerLeft(column, row, grid, shapeColor)
+	return makesTriangleToRight(column, row, grid, shapeCell) ||
+		makesTriangleToLowerLeft(column, row, grid, shapeCell)
 }
 
 // Assumes we are not on the eastern edge of the grid
@@ -218,16 +233,17 @@ func findRowOfLowerCellInStartingColumn(startColumn, startRow int, grid Grid, sh
 		return startRow
 	}
 
+	cellType := GridCell{Color: shapeColor}
 	goodLowRow := startRow
 	_, nextRow := getCellReferenceInDirection(startColumn, startRow, S)
 
 	for {
 		// Only interested in cells of the same color
-		if grid[startColumn][nextRow] != shapeColor {
+		if !cellType.doesCellMatch(grid[startColumn][nextRow]) {
 			return goodLowRow
 		}
 
-		if ! isSameColorAdjacent(startColumn, nextRow, grid, shapeColor, E, W) {
+		if ! isSameColorAdjacent(startColumn, nextRow, grid, cellType, E, W) {
 			return nextRow
 		}
 
@@ -277,28 +293,31 @@ func addSubColumnToShape(column, startRow, endRow int, shape Shape) Shape {
 // Assumes column is not at the right edge of the grid
 func findUpperRowForNextColumn(column, startRow int, grid Grid) int {
 
-	colorInFocus := grid[column][startRow]
+	cellInFocus := grid[column][startRow]
 
 	southeastColumn, southeastRow := getCellReferenceInDirection(column, startRow, SE)
-	southeastColor := grid[southeastColumn][southeastRow]
+	southeastCell := grid[southeastColumn][southeastRow]
+
 	oldRow := startRow
 
 	// If the color of the cell to the southeast is the same, then keep rising up the
 	// current column finding the highest contiguous same-colored cell that also has a
 	// cell of the same color to its southeast
-	if colorInFocus == southeastColor {
+	if cellInFocus.doesCellMatch(southeastCell) {
 		for {
 			if grid.cellIsAtTop(column, oldRow) {
 				return oldRow
 			}
 
 			_, rowAbove := getCellReferenceInDirection(column, oldRow, N)
-			if colorInFocus != grid[column][rowAbove] {
+			if !cellInFocus.doesCellMatch(grid[column][rowAbove]) {
 				return oldRow
 			}
 
 			southEastColumn, southEastRow := getCellReferenceInDirection(column, rowAbove, SE)
-			if colorInFocus != grid[southEastColumn][southEastRow] {
+			southEastCell := grid[southEastColumn][southEastRow]
+
+			if !cellInFocus.doesCellMatch(southEastCell) {
 				return oldRow
 			}
 
@@ -314,7 +333,7 @@ func findUpperRowForNextColumn(column, startRow int, grid Grid) int {
 		}
 
 		_, rowBelow := getCellReferenceInDirection(column, oldRow, S)
-		if colorInFocus != grid[column][rowBelow] {
+		if !cellInFocus.doesCellMatch(grid[column][rowBelow]) {
 			return oldRow
 		}
 
@@ -323,7 +342,7 @@ func findUpperRowForNextColumn(column, startRow int, grid Grid) int {
 		}
 
 		southEastColumn, southEastRow := getCellReferenceInDirection(column, rowBelow, SE)
-		if colorInFocus == grid[southEastColumn][southEastRow] {
+		if cellInFocus.doesCellMatch(grid[southEastColumn][southEastRow]) {
 			return rowBelow
 		}
 
@@ -331,54 +350,18 @@ func findUpperRowForNextColumn(column, startRow int, grid Grid) int {
 	}
 }
 
-// Assumes column is not on the right edge of the grid
-func findLowerRowForNextColumn(column, oldLowRow int, grid Grid) int {
-
-	colorInFocus := grid[column][oldLowRow]
-
-
-	if grid.cellIsAtBottom(column, oldLowRow) {
-		for {
-			eastColumn, eastRow := getCellReferenceInDirection(column, oldLowRow, E)
-			if colorInFocus == grid[eastColumn][eastRow] {
-				return oldLowRow
-			}
-		}
-		return oldLowRow
-	}
-
-	goodLowRow := oldLowRow
-	_, nextRow := getCellReferenceInDirection(column, oldLowRow, S)
-
-	for {
-		// Only interested in cells of the same color
-		if grid[column][nextRow] != colorInFocus {
-			return goodLowRow
-		}
-
-		// If the cell to the northeast of the cell under consideration is a different color,
-		// then the previous (higher) cell is the one we want.
-		northeastColumn, northeastRow := getCellReferenceInDirection(column, nextRow, NE)
-		if grid[northeastColumn][northeastRow] != colorInFocus {
-			return goodLowRow
-		}
-
-		// the cell to the northeast of the cell under consideration is the same color,
-		// so if the cell under consideration is at the bottom of the grid, that's the one we want.
-		if grid.cellIsAtBottom(column, nextRow) {
-			return nextRow
-		}
-
-		goodLowRow = nextRow
-		_, nextRow = getCellReferenceInDirection(column, nextRow, S)
-	}
-}
 
 // Assumes that starting cell is not of the same color.
 // Looks down the column from there for a cell of the same color, with some limitations
-func getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(column, startRow, lowestRow int, grid Grid, shapeColor Color) (int, error) {
+func getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
+	column,
+	startRow,
+	lowestRow int,
+	grid Grid,
+	shapeCell GridCell,
+) (int, error) {
 	for row := startRow + 1; row <= lowestRow; row++ {
-		if grid[column][row] == shapeColor {
+		if shapeCell.doesCellMatch(grid[column][row]) {
 			return row, nil
 		}
 
@@ -390,16 +373,28 @@ func getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(column, startRow, lowes
 	return 0, fmt.Errorf("No valid cells to the right")
 }
 
-func getUpperRowOfNextColumn(columnIsToEast bool, column, startRow, lowestRow int, grid Grid, shapeColor Color) (int, error) {
-	if grid[column][startRow] != shapeColor {
-		return getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(column, startRow, lowestRow, grid, shapeColor)
+func getUpperRowOfNextColumn(
+	columnIsToEast bool,
+	column, startRow, lowestRow int,
+	grid Grid,
+	shapeCell GridCell,
+) (int, error) {
+
+	if !shapeCell.doesCellMatch(grid[column][startRow]) {
+		return getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
+			column,
+			startRow,
+			lowestRow,
+			grid,
+			shapeCell,
+		)
 	}
 
 	cellIsAtEdge := grid.cellIsAtRightOrLeft(columnIsToEast, column, startRow)
 
 	// Starting cell is the same color.  If this column is on the east edge, then go up no more than one row
 	if cellIsAtEdge {
-		if isSameColorAdjacent(column, startRow, grid, shapeColor, N) {
+		if isSameColorAdjacent(column, startRow, grid, shapeCell, N) {
 			_, rowToNorth := getCellReferenceInDirection(column, startRow, N)
 			return rowToNorth, nil
 		}
@@ -412,7 +407,7 @@ func getUpperRowOfNextColumn(columnIsToEast bool, column, startRow, lowestRow in
 
 	// Starting cell is the same color.
 	// If the cell above the starting cell is the same color, add it.
-	if isSameColorAdjacent(column, startRow, grid, shapeColor, N) {
+	if isSameColorAdjacent(column, startRow, grid, shapeCell, N) {
 		previousRow = startRow - 1
 	}
 
@@ -425,11 +420,12 @@ func getUpperRowOfNextColumn(columnIsToEast bool, column, startRow, lowestRow in
 	// until you get a different color or until the cell to the right is a different color
 	// (Avoid a single column "chimney")
 	for row := startRow - 2; row > 0; row-- {
-		if grid[column][row] != shapeColor {
+		if !shapeCell.doesCellMatch(grid[column][row]) {
 			return previousRow, nil
 		}
 
-		if !isSameColorAdjacent(column, row, grid, shapeColor, S) || !isSameColorAdjacent(column, row, grid, shapeColor, checkDirection) {
+		if !isSameColorAdjacent(column, row, grid, shapeCell, S) ||
+			!isSameColorAdjacent(column, row, grid, shapeCell, checkDirection) {
 			return previousRow, nil
 		}
 
@@ -437,7 +433,8 @@ func getUpperRowOfNextColumn(columnIsToEast bool, column, startRow, lowestRow in
 	}
 
 	row := 0
-	if !isSameColorAdjacent(column, row, grid, shapeColor, S) || !isSameColorAdjacent(column, row, grid, shapeColor, checkDirection) {
+	if !isSameColorAdjacent(column, row, grid, shapeCell, S) ||
+		!isSameColorAdjacent(column, row, grid, shapeCell, checkDirection) {
 		return previousRow, nil
 	}
 
@@ -445,12 +442,17 @@ func getUpperRowOfNextColumn(columnIsToEast bool, column, startRow, lowestRow in
 }
 
 
-func getLowerRowOfNextColumn(columnIsToEast bool, column, upperRow, lowestRow int, grid Grid, shapeColor Color) int {
+func getLowerRowOfNextColumn(
+	columnIsToEast bool,
+	column, upperRow, lowestRow int,
+	grid Grid,
+	shapeCell GridCell,
+) int {
 
 	previousRow := upperRow
 
 	for row := upperRow; row <= lowestRow; row++ {
-		if ! isSameColorAdjacent(column, row, grid, shapeColor, S) {
+		if ! isSameColorAdjacent(column, row, grid, shapeCell, S) {
 			return row
 		}
 
@@ -461,7 +463,7 @@ func getLowerRowOfNextColumn(columnIsToEast bool, column, upperRow, lowestRow in
 
 	// If this column is on the east [or west] edge, then go down no more than one row
 	if cellIsAtEdge {
-		if isSameColorAdjacent(column, previousRow, grid, shapeColor, S) {
+		if isSameColorAdjacent(column, previousRow, grid, shapeCell, S) {
 			_, rowToSouth := getCellReferenceInDirection(column, previousRow, S)
 			return rowToSouth
 		}
@@ -482,11 +484,11 @@ func getLowerRowOfNextColumn(columnIsToEast bool, column, upperRow, lowestRow in
 	// is a different color.
 	// (Avoid a single column "stalactite")
 	for row := previousRow + 1; row < len(grid[0]); row++ {
-		if ! isSameColorAdjacent(column, row, grid, shapeColor, S) {
+		if ! isSameColorAdjacent(column, row, grid, shapeCell, S) {
 			return row
 		}
 
-		if ! isSameColorAdjacent(column, row, grid, shapeColor, checkDirection) {
+		if ! isSameColorAdjacent(column, row, grid, shapeCell, checkDirection) {
 			return row
 		}
 
@@ -496,7 +498,13 @@ func getLowerRowOfNextColumn(columnIsToEast bool, column, upperRow, lowestRow in
 	return newLowestRow
 }
 
-func getShapeColumnsToOneSide(lookingToEast bool, previousColumn, startRow, lowestRow int, grid Grid, shape Shape) Shape {
+func getShapeColumnsToOneSide(
+	lookingToEast bool,
+	previousColumn,
+	startRow, lowestRow int,
+	grid Grid,
+	shape Shape,
+) Shape {
 
 	if startRow >= lowestRow {
 		return shape
@@ -513,16 +521,31 @@ func getShapeColumnsToOneSide(lookingToEast bool, previousColumn, startRow, lowe
 		direction = E
 	}
 	nextLowerRow := lowestRow
+	shapeCell := GridCell{Color: shape.Color}
 
 	for {
 		nextColumn, _ = getCellReferenceInDirection(nextColumn, startRow, direction)
 
-		nextUpperRow, err := getUpperRowOfNextColumn(lookingToEast, nextColumn, startRow, nextLowerRow, grid, shape.Color)
+		nextUpperRow, err := getUpperRowOfNextColumn(
+			lookingToEast,
+			nextColumn,
+			startRow,
+			nextLowerRow,
+			grid,
+			shapeCell,
+		)
 		if err != nil {
 			return shape
 		}
 
-		nextLowerRow = getLowerRowOfNextColumn(lookingToEast, nextColumn, nextUpperRow, nextLowerRow, grid, shape.Color)
+		nextLowerRow = getLowerRowOfNextColumn(
+			lookingToEast,
+			nextColumn,
+			nextUpperRow,
+			nextLowerRow,
+			grid,
+			shapeCell,
+		)
 		shape = addSubColumnToShape(nextColumn, nextUpperRow, nextLowerRow, shape)
 
 		if grid.cellIsAtRightOrLeft(lookingToEast, nextColumn, startRow) {
@@ -537,20 +560,20 @@ func getShapeColumnsToOneSide(lookingToEast bool, previousColumn, startRow, lowe
 	return shape
 }
 
-func getUpperRowOfColumnToRight(column, startRow, lowestRow int, grid Grid, shapeColor Color) (int, error) {
-	return getUpperRowOfNextColumn(true, column, startRow, lowestRow, grid, shapeColor)
+func getUpperRowOfColumnToRight(column, startRow, lowestRow int, grid Grid, shapeCell GridCell) (int, error) {
+	return getUpperRowOfNextColumn(true, column, startRow, lowestRow, grid, shapeCell)
 }
 
-func getLowerRowOfColumnToRight(column, upperRow, lowestRow int, grid Grid, shapeColor Color) int {
-	return getLowerRowOfNextColumn(true, column, upperRow, lowestRow, grid, shapeColor)
+func getLowerRowOfColumnToRight(column, upperRow, lowestRow int, grid Grid, shapeCell GridCell) int {
+	return getLowerRowOfNextColumn(true, column, upperRow, lowestRow, grid, shapeCell)
 }
 
-func getUpperRowOfColumnToLeft(column, startRow, lowestRow int, grid Grid, shapeColor Color) (int, error) {
-	return getUpperRowOfNextColumn(false, column, startRow, lowestRow, grid, shapeColor)
+func getUpperRowOfColumnToLeft(column, startRow, lowestRow int, grid Grid, shapeCell GridCell) (int, error) {
+	return getUpperRowOfNextColumn(false, column, startRow, lowestRow, grid, shapeCell)
 }
 
-func getLowerRowOfColumnToLeft(column, upperRow, lowestRow int, grid Grid, shapeColor Color) int {
-	return getLowerRowOfNextColumn(false, column, upperRow, lowestRow, grid, shapeColor)
+func getLowerRowOfColumnToLeft(column, upperRow, lowestRow int, grid Grid, shapeCell GridCell) int {
+	return getLowerRowOfNextColumn(false, column, upperRow, lowestRow, grid, shapeCell)
 }
 
 
@@ -565,12 +588,20 @@ func getShapeColumnsToLeft(previousColumn, startRow, lowestRow int, grid Grid, s
 func getShapeStartingAtCellReference(startColumn, startRow int, grid Grid) Shape {
 	shape := Shape{
 		References: map[int][]int{},
-		Color: grid[startColumn][startRow],
+		Color: grid[startColumn][startRow].Color,
 	}
-	if ! isStartPositionValid(startColumn, startRow, grid, shape.Color) {
+
+	shapeCell := GridCell{Color:shape.Color}
+
+	if ! isStartPositionValid(startColumn, startRow, grid, shapeCell) {
 		return shape
 	}
-	startColumnLowerRow := findRowOfLowerCellInStartingColumn(startColumn, startRow, grid, shape.Color)
+	startColumnLowerRow := findRowOfLowerCellInStartingColumn(
+		startColumn,
+		startRow,
+		grid,
+		shape.Color,
+	)
 
 	// Record startcolumn in the shape
 	shape = addSubColumnToShape(startColumn, startRow, startColumnLowerRow, shape)
