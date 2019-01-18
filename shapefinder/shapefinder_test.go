@@ -5,7 +5,7 @@ import (
 	"strings"
 	"fmt"
 	"sort"
-)
+	)
 
 func Red() GridCell {
 	return GridCell{Color: Color{220, 0, 0, 0}}
@@ -18,8 +18,6 @@ func Green() GridCell {
 func Blue() GridCell {
 	return GridCell{Color: Color{0, 0, 220, 0}}
 }
-
-
 func getRGBColorFromString(colorCode string) GridCell {
 
 	colors := map[string]GridCell{
@@ -55,11 +53,32 @@ func transposeGrid(grid Grid) Grid {
 	}
 	return newGrid
 }
+func transposeGridUsed(gridUsed [][]bool) [][]bool {
+	newGrid := [][]bool{}
+	rowCount := len(gridUsed)
+	colCount := len(gridUsed[0])
+
+	for i := 0; i < colCount; i++ {
+		newCol := []bool{}
+		for j := 0; j < rowCount; j++ {
+			newCol = append(newCol, false)
+		}
+		newGrid = append(newGrid, newCol)
+	}
+
+	for rowIndex, row := range gridUsed {
+		for colIndex, colValue := range row {
+			newGrid[colIndex][rowIndex] = colValue
+		}
+	}
+
+	return newGrid
+}
 
 // initGrid expects a multi-line string of single characters separated by spaces
 // representing colored cells
 // Its return grid is a slice of columns each having a slice of colors for the rows
-func initGrid(textGrid string) [][]GridCell {
+func initGrid(textGrid string, gridUsed [][]bool, t *testing.T) [][]GridCell {
 	grid := [][]GridCell{}
 	rows := strings.Split(textGrid, "\n")
 
@@ -75,7 +94,29 @@ func initGrid(textGrid string) [][]GridCell {
 		grid = append(grid, gridRow)
 	}
 
-	return transposeGrid(grid)
+	grid = transposeGrid(grid)
+
+	if gridUsed == nil {
+		return grid
+	}
+
+	gridUsed = transposeGridUsed(gridUsed)
+	if len(grid) != len(gridUsed) || len(grid[0]) != len(gridUsed[0]) {
+		t.Errorf(
+			"initGrid got grids that don't correspond to each other:\n  %s \nvs.\n  %+v",
+			textGrid,
+			gridUsed,
+		)
+		t.Fail()
+	}
+
+	for colIndex, column := range gridUsed {
+		for rowIndex, cell := range column {
+			grid[colIndex][rowIndex].AlreadyUsed = cell
+		}
+	}
+
+	return grid
 }
 
 func compareGrids(results, expected [][]GridCell) string {
@@ -166,18 +207,25 @@ func compareShapeReferences(results, expected Shape) string {
 
 	return ""
 }
-
-
 func TestInitGrid(t *testing.T) {
 	textGrid := `
 r.g.b
-b.r.g`
+r.r.g`
+
+	gridUsed := [][]bool{
+		{true, false, false},
+		{true, true, false},
+	}
 
     // The grid gets transposed to a list of columns that each have a list of row cell values
-    results := initGrid(textGrid)
+    results := initGrid(textGrid, gridUsed, t)
+
+    trueRed := Red()
+    trueRed.AlreadyUsed = true
+
     expected := Grid{
-    	{Red(), Blue()},
-    	{Green(), Red()},
+    	{trueRed, trueRed},
+    	{Green(), trueRed},
     	{Blue(), Green()},
 	}
 
@@ -199,7 +247,7 @@ b.g.r`
 		direction int
 	}
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	allTestData := []testData{
 		{1, 0, N},
 		{2, 2, NE},
@@ -235,7 +283,7 @@ b.g.r`
 		direction int
 	}
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	allTestData := []testData{
 		{1, 1, N},
 		{1, 2, NE},
@@ -265,9 +313,29 @@ g.r.b
 g.r.b
 b.g.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 
 	results := isSameColorAdjacent(1, 1, grid, grid[1][1], NE, E, S, SW, W, NW)
+	if results {
+		t.Error("Expected false result.")
+	}
+}
+
+func TestIsSameColorAdjacentFalseDueToAlreadyUsed(t *testing.T) {
+	textGrid := `
+g.r.b
+g.r.b
+b.g.r`
+
+	gridUsed := [][]bool{
+		{true, true, false},
+		{true, false, false},
+		{false, false, false},
+	}
+
+	grid := initGrid(textGrid, gridUsed, t)
+
+	results := isSameColorAdjacent(1, 1, grid, grid[1][1], N)
 	if results {
 		t.Error("Expected false result.")
 	}
@@ -279,7 +347,7 @@ g.r.b
 r.r.b
 b.g.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 
 	results := isSameColorAdjacent(1, 1, grid, grid[1][1], E, W)
 	if ! results {
@@ -292,7 +360,7 @@ g.g.b
 b.r.r
 b.g.b`
 
-	grid = initGrid(textGrid)
+	grid = initGrid(textGrid, nil, t)
 
 	results = isSameColorAdjacent(1, 1, grid, grid[1][1], E, W)
 	if ! results {
@@ -310,7 +378,7 @@ g.g.b
 g.r.b
 b.g.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 0
 	startRow := 1
 
@@ -319,6 +387,32 @@ b.g.r`
 		t.Error("Expected a false return value but got true")
 	}
 }
+
+// Given a start position on a Red cell with used Red cells to its south and southwest
+// the function should return false
+func TestIsStartPositionValidFalseAlreadyUsedCellsToSouthAndSouthWest(t *testing.T) {
+
+	textGrid := `
+g.g.b
+g.r.b
+r.r.r`
+
+	gridUsed := [][]bool{
+		{true, true, false},
+		{true, false, false},
+		{true, true, false},
+	}
+
+	grid := initGrid(textGrid, gridUsed, t)
+	startCol := 0
+	startRow := 1
+
+	results := isStartPositionValid(startCol, startRow, grid, grid[startCol][startRow])
+	if results {
+		t.Error("Expected a false return value but got true")
+	}
+}
+
 
 // Given a start position on a Red cell with non-Red cells to its south and southeast
 // the function should return false
@@ -329,7 +423,7 @@ g.g.b
 g.r.b
 r.g.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 0
 	startRow := 1
 
@@ -348,7 +442,7 @@ r.r.b
 r.g.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 1
 
@@ -367,7 +461,7 @@ r.r.b
 r.g.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	startRow := 2
 
@@ -386,7 +480,7 @@ r.r.b
 r.g.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 0
 	startRow := 0
 
@@ -405,7 +499,7 @@ g.r.b
 g.r.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	startRow := 0
 
@@ -424,7 +518,7 @@ g.g.b
 g.r.r
 b.g.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	startRow := 1
 
@@ -443,7 +537,7 @@ g.g.b
 g.g.r
 b.r.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 1
 
@@ -460,7 +554,7 @@ b.b.b
 r.r.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 0
 	startRow := 1
 
@@ -484,7 +578,7 @@ b.b.b
 r.r.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	startRow := 1
 
@@ -510,7 +604,7 @@ b.r.r
 b.r.g
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	startRow := 0
 
@@ -536,7 +630,7 @@ b.r.r
 r.r.g
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	startRow := 0
 
@@ -559,7 +653,7 @@ b.r.r
 r.r.r
 b.b.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	results := isSubColumnOneColor(1, 0, 1, grid)
 	if ! results {
 		t.Errorf("Expected a true return value but got false.")
@@ -573,30 +667,26 @@ b.r.r
 r.r.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	results := isSubColumnOneColor(1, 0, 2, grid)
 	if ! results {
 		t.Errorf("Expected a true return value but got false.")
 	}
 
 }
-
-
 func TestIsSubColumnOneColorFalse(t *testing.T) {
 	textGrid := `
 b.r.r
 r.b.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	results := isSubColumnOneColor(1, 0, 2, grid)
 	if results {
 		t.Errorf("Expected a false return value but got true.")
 	}
 
 }
-
-
 func TestFindNewStartRowGoingUpToTop(t *testing.T) {
 	textGrid := `
 b.r.r
@@ -605,7 +695,7 @@ r.r.r
 r.r.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 
 	results := findUpperRowForNextColumn(1, 2, grid)
 	expected := 0
@@ -623,7 +713,7 @@ r.r.r
 r.r.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 
 	results := findUpperRowForNextColumn(1, 2, grid)
 	expected := 1
@@ -641,7 +731,7 @@ r.r.b
 r.r.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 
 	results := findUpperRowForNextColumn(1, 2, grid)
 	expected := 2
@@ -659,7 +749,7 @@ r.r.b
 r.r.b
 b.r.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 
 	results := findUpperRowForNextColumn(1, 2, grid)
 	expected := 3
@@ -677,7 +767,7 @@ r.r.b
 r.r.r
 b.r.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 
 	results := findUpperRowForNextColumn(1, 1, grid)
 	expected := 2
@@ -686,8 +776,6 @@ b.r.r`
 		t.Errorf("Bad row index. Expected %d, but got %d.", expected, results)
 	}
 }
-
-
 func TestGetUpperRowOfNextColumnWhenItsLowerThanTheStartCell__SlightlyLower(t *testing.T) {
 
 	textGrid := `
@@ -697,7 +785,7 @@ b.r.r
 r.r.g
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 0
 	results, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
@@ -717,8 +805,6 @@ b.r.g`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetUpperRowOfNextColumnWhenItsLowerThanTheStartCell__AtBottom(t *testing.T) {
 
 	textGrid := `
@@ -728,7 +814,7 @@ b.r.g
 r.r.g
 b.r.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 0
 	results, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
@@ -748,8 +834,6 @@ b.r.r`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetUpperRowOfNextColumnWhenItsLowerThanTheStartCell__AtLowerRow(t *testing.T) {
 
 	textGrid := `
@@ -759,7 +843,7 @@ b.r.g
 r.r.r
 b.b.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 0
 	results, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
@@ -789,7 +873,7 @@ b.r.b
 r.r.g
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 0
 	_, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
@@ -815,7 +899,7 @@ b.r.b
 r.r.g
 b.b.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 0
 	_, err := getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
@@ -841,7 +925,7 @@ b.r.b
 r.r.g
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 1
 	_, err := getUpperRowOfColumnToRight(startCol, startRow, 4, grid, Red())
@@ -861,7 +945,7 @@ b.r.b
 r.r.g
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 0
 	lowestRow := len(grid[0])
@@ -886,7 +970,7 @@ b.r.b
 r.r.g
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 0
 	lowestRow := len(grid[0])
@@ -911,7 +995,7 @@ b.r.r
 r.r.g
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 2
 	lowestRow := len(grid[0])
@@ -936,7 +1020,7 @@ b.r.r.r
 r.r.g.g
 b.r.g.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 2
 	lowestRow := len(grid[0])
@@ -952,8 +1036,6 @@ b.r.g.g`
 	}
 }
 
-
-
 func TestGetUpperRowOfColumnToRight__AboveButNotAtTop__WithRedToRight(t *testing.T) {
 
 	textGrid := `
@@ -963,7 +1045,7 @@ b.b.r.r
 r.r.r.r
 b.r.g.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 3
 	lowestRow := len(grid[0])
@@ -978,8 +1060,6 @@ b.r.g.g`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetUpperRowOfColumnToRight__AboveButNotAtTop__OneRedToRight(t *testing.T) {
 
 	textGrid := `
@@ -989,7 +1069,7 @@ b.b.r.r
 r.r.r.g
 b.r.g.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 3
 	lowestRow := len(grid[0])
@@ -1004,8 +1084,6 @@ b.r.g.g`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetUpperRowOfColumnToRight__AboveButNotAtTop__NoRedToRight(t *testing.T) {
 
 	textGrid := `
@@ -1015,7 +1093,7 @@ b.b.r.b
 r.r.r.g
 b.r.g.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	startRow := 3
 	lowestRow := len(grid[0])
@@ -1030,8 +1108,6 @@ b.r.g.g`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 
 func TestGetLowerRowOfColumnToRight__SameAsUpperRow(t *testing.T) {
 
@@ -1042,7 +1118,7 @@ b.r.r
 r.r.b
 b.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	upperRow := 2
 	lowestRow := 3
@@ -1053,8 +1129,6 @@ b.b.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetLowerRowOfColumnToRight__SameAsLowerRow(t *testing.T) {
 
 	textGrid := `
@@ -1064,7 +1138,7 @@ b.r.r
 r.r.r
 b.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	upperRow := 0
 	lowestRow := 3
@@ -1076,10 +1150,7 @@ b.b.b`
 	}
 }
 
-
-
 func TestGetLowerRowOfColumnToRight__AtRight__AvoidStalactite(t *testing.T) {
-
 	textGrid := `
 b.b.b
 b.r.b
@@ -1087,7 +1158,7 @@ b.r.r
 r.b.r
 b.b.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	upperRow := 2
 	lowestRow := 2
@@ -1108,7 +1179,7 @@ b.r.r.r
 r.b.r.r
 b.b.r.r`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	upperRow := 2
 	lowestRow := 2
@@ -1119,8 +1190,6 @@ b.b.r.r`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetLowerRowOfColumnToRight__NotAtRight__NotToBottom(t *testing.T) {
 
 	textGrid := `
@@ -1130,7 +1199,7 @@ b.r.r.r
 r.b.r.b
 b.b.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	upperRow := 1
 	lowestRow := 2
@@ -1141,8 +1210,6 @@ b.b.b.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetLowerRowOfColumnToRight__NotAtRight__AvoidStalactite(t *testing.T) {
 
 	textGrid := `
@@ -1151,8 +1218,8 @@ b.r.r.b
 b.r.r.r
 r.b.r.b
 b.b.r.b`
-
-	grid := initGrid(textGrid)
+	
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	upperRow := 1
 	lowestRow := 2
@@ -1163,8 +1230,6 @@ b.b.r.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 
 func TestGetShapeColumnsToRight__NotAtRight(t *testing.T) {
 
@@ -1175,7 +1240,7 @@ b.r.r.r
 r.b.r.b
 b.b.r.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	upperRow := 1
 	lowestRow := 2
@@ -1207,7 +1272,7 @@ b.r.b.r
 r.b.b.b
 b.b.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	upperRow := 1
 	lowestRow := 2
@@ -1227,8 +1292,6 @@ b.b.b.b`
 		return
 	}
 }
-
-
 func TestGetUpperRowOfColumnToLeft__None(t *testing.T) {
 
 	textGrid := `
@@ -1238,7 +1301,7 @@ b.r.b
 b.r.r
 b.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 0
 	startRow := 1
 	_, err := getUpperRowOfColumnToLeft(startCol, startRow, 4, grid, Red())
@@ -1258,7 +1321,7 @@ b.r.b
 g.r.r
 g.r.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 0
 	startRow := 0
 	lowestRow := len(grid[0])
@@ -1283,7 +1346,7 @@ b.r.b
 g.r.r
 g.r.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 0
 	startRow := 0
 	lowestRow := len(grid[0])
@@ -1308,7 +1371,7 @@ r.r.b
 g.r.r
 g.r.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 0
 	startRow := 2
 	lowestRow := len(grid[0])
@@ -1333,7 +1396,7 @@ r.r.r.b
 g.g.r.r
 g.g.r.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	startRow := 2
 	lowestRow := len(grid[0])
@@ -1349,8 +1412,6 @@ g.g.r.b`
 	}
 }
 
-
-
 func TestGetUpperRowOfColumnToLeft__AboveButNotAtTop__WithRedToLeft(t *testing.T) {
 
 	textGrid := `
@@ -1360,7 +1421,7 @@ r.r.b.b
 r.r.r.r
 g.g.r.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	startRow := 3
 	lowestRow := len(grid[0])
@@ -1375,8 +1436,6 @@ g.g.r.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetUpperRowOfColumnToLeft__AboveButNotAtTop__OneRedToLeft(t *testing.T) {
 
 	textGrid := `
@@ -1386,7 +1445,7 @@ r.r.b.b
 g.r.r.r
 g.g.r.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	startRow := 3
 	lowestRow := len(grid[0])
@@ -1401,8 +1460,6 @@ g.g.r.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetUpperRowOfColumnToLeft__AboveButNotAtTop__NoRedToLeft(t *testing.T) {
 
 	textGrid := `
@@ -1412,7 +1469,7 @@ b.r.b.b
 g.r.r.r
 g.g.r.g`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	startRow := 3
 	lowestRow := len(grid[0])
@@ -1427,8 +1484,6 @@ g.g.r.g`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 
 func TestGetLowerRowOfColumnToLeft__SameAsUpperRow(t *testing.T) {
 
@@ -1439,7 +1494,7 @@ r.r.b
 b.r.r
 b.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 0
 	upperRow := 2
 	lowestRow := 3
@@ -1450,8 +1505,6 @@ b.b.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetLowerRowOfColumnToLeft__SameAsLowerRow(t *testing.T) {
 
 	textGrid := `
@@ -1461,7 +1514,7 @@ r.r.b
 r.r.r
 b.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 0
 	upperRow := 0
 	lowestRow := 3
@@ -1473,8 +1526,6 @@ b.b.b`
 	}
 }
 
-
-
 func TestGetLowerRowOfColumnToLeft__AtRight__AvoidStalactite(t *testing.T) {
 
 	textGrid := `
@@ -1484,7 +1535,7 @@ r.r.b
 r.b.r
 r.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 0
 	upperRow := 2
 	lowestRow := 2
@@ -1505,7 +1556,7 @@ r.r.r.b
 r.r.b.r
 r.r.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	upperRow := 2
 	lowestRow := 2
@@ -1516,8 +1567,6 @@ r.r.b.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetLowerRowOfColumnToLeft__NotAtRight__NotToBottom(t *testing.T) {
 
 	textGrid := `
@@ -1527,7 +1576,7 @@ r.r.r.b
 b.r.b.r
 b.b.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	upperRow := 1
 	lowestRow := 2
@@ -1538,8 +1587,6 @@ b.b.b.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetLowerRowOfColumnToLeft__NotAtLeft__AvoidStalactite(t *testing.T) {
 
 	textGrid := `
@@ -1549,7 +1596,7 @@ r.r.r.b
 b.r.b.r
 b.r.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 1
 	upperRow := 1
 	lowestRow := 2
@@ -1560,8 +1607,6 @@ b.r.b.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
-
-
 func TestGetShapeColumnsToLeft__NotAtLeft(t *testing.T) {
 
 	textGrid := `
@@ -1571,7 +1616,7 @@ r.r.r.b
 b.r.b.r
 b.r.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	upperRow := 1
 	lowestRow := 2
@@ -1594,8 +1639,6 @@ b.r.b.b`
 		return
 	}
 }
-
-
 func TestGetShapeColumnsToLeft__None(t *testing.T) {
 
 	textGrid := `
@@ -1605,7 +1648,7 @@ r.b.r.b
 b.b.b.r
 b.b.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	upperRow := 1
 	lowestRow := 2
@@ -1626,8 +1669,6 @@ b.b.b.b`
 	}
 }
 
-
-
 func TestGetShapeStartingAtCellReference__None(t *testing.T) {
 
 	textGrid := `
@@ -1637,7 +1678,7 @@ r.b.r.b
 b.b.b.r
 b.b.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	upperRow := 1
 
@@ -1654,8 +1695,6 @@ b.b.b.b`
 	}
 }
 
-
-
 func TestGetShapeStartingAtCellReference__Ladder(t *testing.T) {
 
 	textGrid := `
@@ -1665,7 +1704,7 @@ r.b.r.r.g
 b.r.r.b.r
 b.b.r.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 2
 	upperRow := 1
 
@@ -1686,8 +1725,6 @@ b.b.r.b.b`
 	}
 }
 
-
-
 func TestGetShapeStartingAtCellReference__BigComplicatedOne(t *testing.T) {
 /*
 0.1.2.3.4.5.6.7.8.9.0.1.2.3
@@ -1705,7 +1742,7 @@ r.b.r.r.b.r.r.b.r.b.b.b.b.g
 b.b.b.b.r.r.b.r.r.b.r.r.b.r
 b.b.b.b.b.r.b.b.r.b.b.r.b.b`
 
-	grid := initGrid(textGrid)
+	grid := initGrid(textGrid, nil, t)
 	startCol := 3
 	startRow := 0
 
