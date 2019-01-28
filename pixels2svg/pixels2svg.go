@@ -8,8 +8,10 @@ import (
 
 type evaluatorFunc func(int, int, [4]uint8) bool
 
+type Color [4]uint8
+
 type Line struct {
-	ColorRGBA [4]uint8
+	ColorRGBA Color
 	ColX1     int
 	RowY1     int
 	ColX2     int
@@ -17,34 +19,30 @@ type Line struct {
 }
 
 type Polygon struct {
-	ColorRGBA [4]uint8
+	ColorRGBA Color
 	Points    [][2]int
 }
 
+
+type GridCell struct {
+	AlreadyUsed bool
+	Color       Color
+}
+
+func (g GridCell) doesCellMatch(g2 GridCell) bool {
+	return !g2.AlreadyUsed && g.Color == g2.Color
+}
+
+type Grid [][]GridCell
+
+
 type ShapeExtractor struct {
 	badDirection       int
-	grid               [][][4]uint8
-	alreadyDone        [][]bool
+	grid               Grid
 	ColCount           int
 	RowCount           int
 	neighborEvaluators [8]evaluatorFunc
 	cellQueue          [][2]int
-}
-
-func (s *ShapeExtractor) showAlreadyDone() {
-	done := s.alreadyDone
-
-	// Output already done grid
-	for rowY := 0; rowY < len(done[0]); rowY++ {
-		for colX := 0; colX < len(done); colX++ {
-			if done[colX][rowY] {
-				print("1 ")
-			} else {
-				print("0 ")
-			}
-		}
-		println("")
-	}
 }
 
 func (s *ShapeExtractor) setNeighborEvaluators() {
@@ -69,24 +67,20 @@ func (s *ShapeExtractor) isCellDoneOrDifferent(
 	color [4]uint8,
 ) bool {
 	// True if different color or alreadyDone
-	return s.grid[nextCol][nextRow] != color || s.alreadyDone[nextCol][nextRow]
+	return s.grid[nextCol][nextRow].Color != color || s.grid[nextCol][nextRow].AlreadyUsed
 }
 
-/*
- *  Given a starting cell, get the furthest cell to its right
- *  (i.e. the column (X) index) that still has its same color.
- */
-func (s *ShapeExtractor) getColorRow(
-	startCol, rowY int,
-	color [4]uint8,
-) int {
-	for colX := startCol + 1; colX < s.ColCount; colX++ {
-		if s.isCellDoneOrDifferent(colX, rowY, color) {
-			return colX - 1
-		}
+
+func (s *ShapeExtractor) cellIsAtRightOrLeft(checkToTheRight bool, column int) bool {
+	cellIsAtEdge := false
+	if checkToTheRight {
+		cellIsAtEdge = s.cellIsAtRight(column)
+	} else {
+		cellIsAtEdge = s.cellIsAtLeft(column)
 	}
-	return s.ColCount - 1
+	return cellIsAtEdge
 }
+
 
 func (s *ShapeExtractor) cellIsAtLeft(colX int) bool {
 	return colX <= 0
@@ -111,7 +105,7 @@ func (s *ShapeExtractor) isNorthCellGood(
 	if s.cellIsAtTop(rowY) {
 		return false
 	}
-	newCol, newRow := s.getCellInDirection(colX, rowY, 0)
+	newCol, newRow := getCellReferenceInDirection(colX, rowY, N)
 
 	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
@@ -123,7 +117,7 @@ func (s *ShapeExtractor) isNorthEastCellGood(
 	if s.cellIsAtTop(rowY) || s.cellIsAtRight(colX) {
 		return false
 	}
-	newCol, newRow := s.getCellInDirection(colX, rowY, 1)
+	newCol, newRow := getCellReferenceInDirection(colX, rowY, NE)
 
 	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
@@ -135,7 +129,7 @@ func (s *ShapeExtractor) isEastCellGood(
 	if s.cellIsAtRight(colX) {
 		return false
 	}
-	newCol, newRow := s.getCellInDirection(colX, rowY, 2)
+	newCol, newRow := getCellReferenceInDirection(colX, rowY, E)
 
 	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
@@ -147,7 +141,7 @@ func (s *ShapeExtractor) isSouthEastCellGood(
 	if s.cellIsAtRight(colX) || s.cellIsAtBottom(rowY) {
 		return false
 	}
-	newCol, newRow := s.getCellInDirection(colX, rowY, 3)
+	newCol, newRow := getCellReferenceInDirection(colX, rowY, SE)
 
 	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
@@ -159,7 +153,7 @@ func (s *ShapeExtractor) isSouthCellGood(
 	if s.cellIsAtBottom(rowY) {
 		return false
 	}
-	newCol, newRow := s.getCellInDirection(colX, rowY, 4)
+	newCol, newRow := getCellReferenceInDirection(colX, rowY, S)
 
 	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
@@ -171,7 +165,7 @@ func (s *ShapeExtractor) isSouthWestCellGood(
 	if s.cellIsAtBottom(rowY) || s.cellIsAtLeft(colX) {
 		return false
 	}
-	newCol, newRow := s.getCellInDirection(colX, rowY, 5)
+	newCol, newRow := getCellReferenceInDirection(colX, rowY, SW)
 
 	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
@@ -183,7 +177,7 @@ func (s *ShapeExtractor) isWestCellGood(
 	if s.cellIsAtLeft(colX) {
 		return false
 	}
-	newCol, newRow := s.getCellInDirection(colX, rowY, 6)
+	newCol, newRow := getCellReferenceInDirection(colX, rowY, W)
 
 	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
@@ -195,7 +189,7 @@ func (s *ShapeExtractor) isNorthWestCellGood(
 	if s.cellIsAtLeft(colX) || s.cellIsAtTop(rowY) {
 		return false
 	}
-	newCol, newRow := s.getCellInDirection(colX, rowY, 7)
+	newCol, newRow := getCellReferenceInDirection(colX, rowY, NW)
 
 	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
@@ -279,95 +273,12 @@ func (s *ShapeExtractor) directionToGoodNeighboringCell(
 }
 
 /*
- * Given a cell and a direction what are the cell cordinates of the neighboring
- * cell in that direction.
- * Assumes that boundary checks are already done, so that the starting cell
- * won't be on a boundary
- */
-func (s *ShapeExtractor) getCellInDirection(colX, rowY, nextDirection int) (int, int) {
-	switch nextDirection {
-	case 0: // North
-		return colX, rowY - 1
-	case 1: // Northeast
-		return colX + 1, rowY - 1
-	case 2: // East
-		return colX + 1, rowY
-	case 3: // Southeast
-		return colX + 1, rowY + 1
-	case 4: // South
-		return colX, rowY + 1
-	case 5: // Southwest
-		return colX - 1, rowY + 1
-	case 6: // West
-		return colX - 1, rowY
-	case 7: // Northwest
-		return colX - 1, rowY - 1
-	}
-
-	panic(fmt.Sprintf(
-		"Error: direction should be 0, 1, 2, 3, 4, 5, 6, 7.  Was passed: %d",
-		nextDirection,
-	))
-	return 0, 0
-}
-
-// TODO: This does not account for rings that surround a different color
-
-/*
- * OutlinePolygon gets the outline of a polygon from a starting cell.
- * Don't use cells of a different color or that have been used previously
- *
- * Trace the outline as if you're a person walking a certain direction
- * clockwise around the edge of the polygon, keeping the outside of
- * the polygon on your left. Stop when you get back to the starting point.
- *
- * Direction codes
- *  0: North
- *  1: Northeast
- *  2: East
- *  3: Southeast
- *  4: South
- *  5: Southwest
- *  6: West
- *  7: Northwest
- */
-func (s *ShapeExtractor) OutlinePolygon(
-	colX, rowY, direction int,
-	color [4]uint8,
-) [][2]int {
-	outlinePoints := [][2]int{{colX, rowY}}
-	if s.alreadyDone[colX][rowY] {
-		return nil
-	}
-	for {
-		newDirection := s.directionToGoodNeighboringCell(colX, rowY, direction, color)
-
-		if newDirection >= s.badDirection {
-			if len(outlinePoints) <= 2 {
-				return nil
-			}
-		}
-
-		newCol, newRow := s.getCellInDirection(colX, rowY, newDirection)
-
-		if newCol == outlinePoints[0][0] && newRow == outlinePoints[0][1] {
-			return outlinePoints
-		}
-
-		colX = newCol
-		rowY = newRow
-		direction = newDirection
-		outlinePoints = append(outlinePoints, [2]int{colX, rowY})
-	}
-}
-
-/*
  * Given a starting cell, get the range of cells to its right and below
  * that have the same color and form a line
  *
  */
 func (s *ShapeExtractor) GetLine(startCol, startRow int) Line {
-	color := s.grid[startCol][startRow]
+	color := s.grid[startCol][startRow].Color
 
 	newLine := Line{
 		ColorRGBA: color,
@@ -379,7 +290,7 @@ func (s *ShapeExtractor) GetLine(startCol, startRow int) Line {
 	direction := s.directionToGoodNeighboringCell(startCol, startRow, 4, color)
 
 	if direction >= s.badDirection {
-		s.alreadyDone[startCol][startRow] = true
+		s.grid[startCol][startRow].AlreadyUsed = true
 		newLine.ColX2 = startCol
 		newLine.RowY2 = startRow // Don't worry if it's just a dot
 		return newLine
@@ -390,201 +301,35 @@ func (s *ShapeExtractor) GetLine(startCol, startRow int) Line {
 	neighborEvaluator := s.neighborEvaluators[direction]
 
 	for {
-		nextCol, nextRow := s.getCellInDirection(prevCol, prevRow, direction)
+		nextCol, nextRow := getCellReferenceInDirection(prevCol, prevRow, direction)
 		isGood := neighborEvaluator(prevCol, prevRow, color)
 		if !isGood {
 			break
 		}
 
-		s.alreadyDone[prevCol][prevRow] = true
+		s.grid[prevCol][prevRow].AlreadyUsed = true
 		prevCol = nextCol
 		prevRow = nextRow
 	}
 
-	s.alreadyDone[prevCol][prevRow] = true
+	s.grid[prevCol][prevRow].AlreadyUsed = true
 	newLine.ColX2 = prevCol
 	newLine.RowY2 = prevRow
 
 	return newLine
 }
 
-func (s *ShapeExtractor) Init(colorGrid [][][4]uint8) {
-
+func (s *ShapeExtractor) Init(grid Grid) {
 	s.badDirection = 8
-	s.ColCount = len(colorGrid)
-	s.RowCount = len(colorGrid[0])
-	s.grid = colorGrid
-	s.alreadyDone = [][]bool{}
-
-	// set the alreadyDone grid values
-	for colX := 0; colX < s.ColCount; colX++ {
-		nextColumn := []bool{}
-		for rowY := 0; rowY < s.RowCount; rowY++ {
-			nextColumn = append(nextColumn, false)
-		}
-		s.alreadyDone = append(s.alreadyDone, nextColumn)
-	}
-}
-
-/*
- * Given a cell on the grid. Get all the polygon outlines that follow
- * from that cell.
- */
-func (s *ShapeExtractor) GetPolygonsFromCell(
-	colX, rowY, direction int,
-	color [4]uint8,
-) [][][2]int {
-
-	allPolygons := [][][2]int{}
-	outlinePoints := s.OutlinePolygon(colX, rowY, direction, color)
-	if len(outlinePoints) < 3 {
-		return allPolygons
-	}
-
-	cleanedUpPolygons := CleanUpPolygonOutline(
-		outlinePoints,
-		[][][2]int{},
-		0,
-	)
-
-	for _, nextPolygon := range cleanedUpPolygons {
-		_, reducedPolygon := ReducePolygonOutline(nextPolygon)
-		if len(reducedPolygon) > 2 {
-			s.markPolygonAlreadyDone(nextPolygon)
-			allPolygons = append(allPolygons, reducedPolygon)
-		}
-	}
-
-	return allPolygons
-}
-
-/*
- *  Check the neighboring cells.  If they are the
- * same color and not yet done, mark them as done and add them to the queue.
- */
-func (s *ShapeExtractor) addNeighborsToQueue(colX, rowY int, color [4]uint8) {
-
-	for direction := 0; direction <= 7; direction += 1 {
-
-		evaluator := s.neighborEvaluators[direction]
-		isGood := evaluator(colX, rowY, color)
-
-		if isGood {
-			nextCol, nextRow := s.getCellInDirection(colX, rowY, direction)
-			s.alreadyDone[nextCol][nextRow] = true
-			s.cellQueue = append(s.cellQueue, [2]int{nextCol, nextRow})
-		}
-	}
-}
-
-/*
- *  For each cell in the queue, mark it as already done
- * and remove it from the queue, but also
- * add its neighbors to the queue if they have the same color
- * and aren't done yet
- */
-func (s *ShapeExtractor) markCellQueueDone(color [4]uint8) {
-	if len(s.cellQueue) < 1 {
-		return
-	}
-
-	colX, rowY := split2Int(s.cellQueue[0])
-	s.addNeighborsToQueue(colX, rowY, color)
-	s.cellQueue = s.cellQueue[1:]
-
-	s.markCellQueueDone(color)
-}
-
-/*
- * Given a polygon with an outline starting at a certain cell, mark
- * all its points (outline and internal) as "alreadyDone".
- *
- * Assumes that the polygon outline is contiguous right-angle points.
- * Assumes first point is the highest row of the outline and the
- *   left-most cell of that row.
- *
- * Marks each point on the outline as already done and also adds the
- * cell to their "right" and "angled right" to a queue for continuing
- * the process of marking as done.
- *
- */
-func (s *ShapeExtractor) markPolygonAlreadyDone(polygonOutline [][2]int) {
-
-	if len(polygonOutline) < 3 {
-		return
-	}
-
-	s.setNeighborEvaluators()
-	s.cellQueue = [][2]int{}
-
-	// deal with first cell on its own
-	prevCol, prevRow := split2Int(polygonOutline[0])
-	color := s.grid[prevCol][prevRow]
-	s.alreadyDone[prevCol][prevRow] = true
-
-	// Walk through outline and add cells to the right to the queue
-	// of cells to mark as already done
-	for _, nextPoint := range polygonOutline[1:] {
-		nextCol, nextRow := split2Int(nextPoint)
-		direction := s.getLatestDirection(prevCol, prevRow, nextCol, nextRow)
-		s.alreadyDone[nextCol][nextRow] = true
-
-		// Get its cell to the "right" and if necessary, add to the queue
-		innerDirection := s.getRight90Direction(direction)
-
-		evaluator := s.neighborEvaluators[innerDirection]
-		isGood := evaluator(nextCol, nextRow, color)
-		if isGood {
-			innerCol, innerRow := s.getCellInDirection(nextCol, nextRow, innerDirection)
-			s.alreadyDone[innerCol][innerRow] = true
-
-			s.cellQueue = append(s.cellQueue, [2]int{innerCol, innerRow})
-		}
-
-		// Get its cell slightly to the "right" and if necessary, add to the queue
-		innerDirection = s.getAngledRightDirection(direction)
-
-		evaluator = s.neighborEvaluators[innerDirection]
-		isGood = evaluator(nextCol, nextRow, color)
-		if isGood {
-			innerCol, innerRow := s.getCellInDirection(nextCol, nextRow, innerDirection)
-			s.alreadyDone[innerCol][innerRow] = true
-
-			s.cellQueue = append(s.cellQueue, [2]int{innerCol, innerRow})
-		}
-
-		prevCol = nextCol
-		prevRow = nextRow
-	}
-
-	s.markCellQueueDone(color)
-	// s.showAlreadyDone()
-	// println("\n")
+	s.ColCount = len(grid)
+	s.RowCount = len(grid[0])
+	s.grid = grid
 }
 
 func (s *ShapeExtractor) ProcessAllPolygons() []Polygon {
-	startDirection := 2
+//	startDirection := 2
 	allPolygons := []Polygon{}
 
-	// Start at top left and move to the right, then down a row, then right ...
-	for rowIndex := 0; rowIndex < s.RowCount; rowIndex++ {
-		for colIndex := 0; colIndex < s.ColCount; colIndex++ {
-			color := s.grid[colIndex][rowIndex]
-			nextPolygons := s.GetPolygonsFromCell(
-				colIndex,
-				rowIndex,
-				startDirection,
-				color,
-			)
-			for _, nextPoly := range nextPolygons {
-				newPoly := Polygon{
-					ColorRGBA: color,
-					Points:    nextPoly,
-				}
-				allPolygons = append(allPolygons, newPoly)
-			}
-		}
-	}
 
 	return allPolygons
 }
@@ -599,7 +344,7 @@ func (s *ShapeExtractor) ProcessAllLines() []Line {
 	// Start at top left and move to the right, then down a row, then right ...
 	for rowIndex := 0; rowIndex < s.RowCount; rowIndex++ {
 		for colIndex := 0; colIndex < s.ColCount; colIndex++ {
-			if !s.alreadyDone[colIndex][rowIndex] {
+			if !s.grid[colIndex][rowIndex].AlreadyUsed {
 				nextLine := s.GetLine(colIndex, rowIndex)
 				allLines = append(allLines, nextLine)
 			}

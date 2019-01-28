@@ -170,16 +170,28 @@ func compareSliceofStrings(results, expected []string) string {
 /*
  *  Five columns, four rows - all almost black
  */
-func getColorGrid() [][][4]uint8 {
+func getColorGrid() Grid {
 	black := [4]uint8{1, 1, 1, 1}
-	grid := [][][4]uint8{
-		{black, black, black, black}, // Column 0
-		{black, black, black, black}, // Column 1
-		{black, black, black, black}, // Column 2
-		{black, black, black, black}, // Column 3
-		{black, black, black, black}, // Column 4
+	grid := Grid{
+		{{Color: black}, {Color: black}, {Color: black}, {Color: black}}, // Column 0
+		{{Color: black}, {Color: black}, {Color: black}, {Color: black}}, // Column 1
+		{{Color: black}, {Color: black}, {Color: black}, {Color: black}}, // Column 2
+		{{Color: black}, {Color: black}, {Color: black}, {Color: black}}, // Column 3
+		{{Color: black}, {Color: black}, {Color: black}, {Color: black}}, // Column 4
 	}
 	return grid
+}
+
+func getAlreadyUsedFromGrid(grid Grid) [][]bool {
+	used := [][]bool{}
+	for _, column := range grid {
+		newColumn := []bool{}
+		for _, cell := range column {
+			newColumn = append(newColumn, cell.AlreadyUsed)
+		}
+		used = append(used, newColumn)
+	}
+	return used
 }
 
 // TODO: This should cause a failure because of the internal reds from 7, 7, but it doesn't
@@ -199,127 +211,60 @@ func getColorGrid() [][][4]uint8 {
  * 11 r  r  r  r  r  r  b  b  b  b  b  b  g  g  g  g  g  g
  * 12
  */
-func getBigColorGrid() [][][4]uint8 {
-	gridColors := [][][4]uint8{}
+func getBigColorGrid() Grid {
+	grid := Grid{}
 
-	red := [4]uint8{235, 0, 0, 0}
-	yellow := [4]uint8{235, 235, 0, 0}
-	blue := [4]uint8{0, 0, 220, 0}
-	green := [4]uint8{0, 180, 60, 0}
+	red := Color{235, 0, 0, 0}
+	yellow := Color{235, 235, 0, 0}
+	blue := Color{0, 0, 220, 0}
+	green := Color{0, 180, 60, 0}
 
 	// Left Rectangle
 	for colX := 0; colX < 6; colX++ {
-		nextCol := [][4]uint8{}
+		nextCol := []GridCell{}
 		for rowY := 0; rowY < 12; rowY++ {
-			nextCol = append(nextCol, red)
+			nextCol = append(nextCol, GridCell{Color:red})
 		}
-		gridColors = append(gridColors, nextCol)
+		grid = append(grid, nextCol)
 	}
 
 	// Middle polygons
 	for colX := 6; colX < 12; colX++ {
-		nextCol := [][4]uint8{}
+		nextCol := []GridCell{}
 		for rowY := 0; rowY < 12; rowY++ {
 			if rowY < 2+colX-6 {
-				nextCol = append(nextCol, yellow)
+				nextCol = append(nextCol, GridCell{Color: yellow})
 			} else {
-				nextCol = append(nextCol, blue)
+				nextCol = append(nextCol, GridCell{Color: blue})
 			}
 		}
-		gridColors = append(gridColors, nextCol)
+		grid = append(grid, nextCol)
 	}
 
 	// Right Rectangle
 	for colX := 12; colX < 18; colX++ {
-		nextCol := [][4]uint8{}
+		nextCol := []GridCell{}
 		for rowY := 0; rowY < 12; rowY++ {
-			nextCol = append(nextCol, green)
+			nextCol = append(nextCol, GridCell{Color: green})
 		}
-		gridColors = append(gridColors, nextCol)
+		grid = append(grid, nextCol)
 	}
 
 	// Add rectangle in middle of Right Rectangle
 	for colX := 14; colX < 16; colX++ {
 		for rowY := 4; rowY < 8; rowY++ {
-			gridColors[colX][rowY] = red
+			grid[colX][rowY] = GridCell{Color: red}
 		}
 	}
 
 	// Add a line in middle of Left Rectangle
 	for rowY := 4; rowY < 8; rowY++ {
-		gridColors[3][rowY] = blue
+		grid[3][rowY] = GridCell{Color: blue}
 	}
 
-	return gridColors
+	return grid
 }
 
-func TestGetColorRowWholeRow(t *testing.T) {
-	var s ShapeExtractor
-	s.Init(getColorGrid())
-
-	startCol := 0
-	startRow := 3
-
-	results := s.getColorRow(startCol, startRow, [4]uint8{1, 1, 1, 1})
-	expected := s.ColCount - 1
-
-	if results != expected {
-		t.Errorf("Expected %d, but got %d", expected, results)
-	}
-}
-
-func TestGetColorRowPartRowDifferentColor(t *testing.T) {
-	var s ShapeExtractor
-	s.Init(getColorGrid())
-
-	startCol := 0
-	startRow := 0
-
-	differentColumn := 3
-	s.grid[differentColumn][startRow] = [4]uint8{9, 9, 9, 9}
-
-	results := s.getColorRow(startCol, startRow, [4]uint8{1, 1, 1, 1})
-	expected := differentColumn - 1
-
-	if results != expected {
-		t.Errorf("Expected %d, but got %d", expected, results)
-	}
-}
-
-func TestGetColorRowPartRowAlreadyDone(t *testing.T) {
-	var s ShapeExtractor
-	s.Init(getColorGrid())
-
-	doneColumn := 4
-	startCol := 1
-	startRow := 1
-
-	s.alreadyDone[doneColumn][startRow] = true
-
-	results := s.getColorRow(startCol, startRow, [4]uint8{1, 1, 1, 1})
-	expected := doneColumn - 1
-
-	if results != expected {
-		t.Errorf("Expected %d, but got %d", expected, results)
-	}
-}
-
-func TestGetColorRowNoMore(t *testing.T) {
-	var s ShapeExtractor
-	s.Init(getColorGrid())
-
-	startRow := 1
-	startCol := 2
-	doneColumn := startCol + 1
-	s.alreadyDone[doneColumn][startRow] = true
-
-	results := s.getColorRow(startCol, startRow, [4]uint8{1, 1, 1, 1})
-	expected := startCol
-
-	if results != expected {
-		t.Errorf("Expected %d, but got %d", expected, results)
-	}
-}
 
 func TestGetLineHorizontalWhole(t *testing.T) {
 	var s ShapeExtractor
@@ -347,7 +292,7 @@ func TestGetLineHorizontalWhole(t *testing.T) {
 func TestGetLineHorizontalPartial(t *testing.T) {
 	var s ShapeExtractor
 	s.Init(getColorGrid())
-	s.grid[s.ColCount-1][1] = [4]uint8{9, 9, 9, 9}
+	s.grid[s.ColCount-1][1] = GridCell{Color: [4]uint8{9, 9, 9, 9}}
 	startCol := 1
 	startRow := 1
 
@@ -393,11 +338,11 @@ func TestGetLineLastColumnWhole(t *testing.T) {
 func TestGetLineVerticalPartial(t *testing.T) {
 	var s ShapeExtractor
 	s.Init(getColorGrid())
-	s.alreadyDone[1][0] = true
-	s.alreadyDone[2][0] = true
-	s.grid[2][1] = [4]uint8{2, 2, 2, 2}
-	s.grid[2][2] = [4]uint8{2, 2, 2, 2}
-	s.grid[1][s.RowCount-1] = [4]uint8{2, 2, 2, 2}
+	s.grid[1][0].AlreadyUsed =  true
+	s.grid[2][0].AlreadyUsed =  true
+	s.grid[2][1] = GridCell{Color: Color{2, 2, 2, 2}}
+	s.grid[2][2] = GridCell{Color: Color{2, 2, 2, 2}}
+	s.grid[1][s.RowCount-1] = GridCell{Color: Color{2, 2, 2, 2}}
 
 	startCol := 1
 	startRow := 1
@@ -422,13 +367,13 @@ func TestGetLineVerticalPartial(t *testing.T) {
 func TestGetLineAngledPartial(t *testing.T) {
 	var s ShapeExtractor
 	s.Init(getColorGrid())
-	s.alreadyDone[3][0] = true
-	s.alreadyDone[4][0] = true
-	s.grid[4][1] = [4]uint8{2, 2, 2, 2}
-	s.grid[4][2] = [4]uint8{2, 2, 2, 2}
-	s.grid[4][3] = [4]uint8{2, 2, 2, 2}
-	s.grid[3][2] = [4]uint8{2, 2, 2, 2}
-	s.grid[1][s.RowCount-1] = [4]uint8{2, 2, 2, 2}
+	s.grid[3][0].AlreadyUsed = true
+	s.grid[4][0].AlreadyUsed = true
+	s.grid[4][1] = GridCell{Color: Color{2, 2, 2, 2}}
+	s.grid[4][2] = GridCell{Color: Color{2, 2, 2, 2}}
+	s.grid[4][3] = GridCell{Color: Color{2, 2, 2, 2}}
+	s.grid[3][2] = GridCell{Color: Color{2, 2, 2, 2}}
+	s.grid[1][s.RowCount-1] = GridCell{Color: Color{2, 2, 2, 2}}
 
 	startCol := 3
 	startRow := 1
@@ -436,7 +381,7 @@ func TestGetLineAngledPartial(t *testing.T) {
 	results := s.GetLine(startCol, startRow)
 
 	expected := Line{
-		ColorRGBA: [4]uint8{1, 1, 1, 1},
+		ColorRGBA: Color{1, 1, 1, 1},
 		ColX1:     startCol,
 		RowY1:     startRow,
 		ColX2:     2,
@@ -456,9 +401,9 @@ func TestGetLineOneCell(t *testing.T) {
 	startCol := 0
 	startRow := 0
 
-	s.grid[0][1] = [4]uint8{9, 9, 9, 9}
-	s.alreadyDone[1][0] = true
-	s.alreadyDone[1][1] = true
+	s.grid[0][1] = GridCell{Color: Color{9, 9, 9, 9}}
+	s.grid[1][0].AlreadyUsed = true
+	s.grid[1][1].AlreadyUsed = true
 
 	results := s.GetLine(startCol, startRow)
 
@@ -476,202 +421,6 @@ func TestGetLineOneCell(t *testing.T) {
 	}
 }
 
-/*
- * |   |   | X | X | X |
- * | X | X | X | 2 | 3 |
- * | X | 0 | 1 | c | 4 |
- * | 8 | 7 | 6 | 5 | X |
- */
-func TestOutlinePolygonPartial(t *testing.T) {
-	var s ShapeExtractor
-	s.Init(getColorGrid())
-
-	s.grid[1][1] = [4]uint8{9, 9, 9, 9}
-	s.grid[2][1] = [4]uint8{9, 9, 9, 9}
-	s.alreadyDone[0][1] = true
-	s.alreadyDone[0][2] = true
-	s.alreadyDone[2][0] = true
-	s.alreadyDone[3][0] = true
-	s.alreadyDone[4][0] = true
-	s.alreadyDone[4][3] = true
-
-	colX := 1
-	rowY := 2
-	direction := 2
-
-	results := s.OutlinePolygon(colX, rowY, direction, [4]uint8{1, 1, 1, 1})
-	expected := [][2]int{
-		{1, 2},
-		{2, 2},
-		{3, 1},
-		{4, 1},
-		{4, 2},
-		{3, 3},
-		{2, 3},
-		{1, 3},
-		{0, 3},
-	}
-
-	err := compareOutlinePoints(results, expected)
-	if err != "" {
-		t.Errorf("Polygon outline. %s", err)
-	}
-}
-
-func TestAddNeighborsToQueueTopEdge(t *testing.T) {
-	var s ShapeExtractor
-
-	s.setNeighborEvaluators()
-
-	gridColors := getBigColorGrid()
-	s.Init(gridColors)
-	s.cellQueue = [][2]int{}
-	red := s.grid[0][0]
-
-	// outline and already done points
-	s.alreadyDone[2][0] = true
-	s.alreadyDone[3][0] = true
-	s.alreadyDone[4][0] = true
-	s.alreadyDone[2][1] = true
-
-	s.addNeighborsToQueue(3, 1, red)
-	results := s.cellQueue
-	expected := [][2]int{{4, 1}, {4, 2}, {3, 2}, {2, 2}}
-
-	err := compareOutlinePoints(results, expected)
-	if err != "" {
-		t.Errorf("Cell Queue. %s", err)
-	}
-}
-
-func TestAddNeighborsToQueueTopRightCorner(t *testing.T) {
-	var s ShapeExtractor
-
-	s.setNeighborEvaluators()
-
-	gridColors := getBigColorGrid()
-	s.Init(gridColors)
-	s.cellQueue = [][2]int{}
-	red := s.grid[0][0]
-
-	s.alreadyDone[3][0] = true
-	s.alreadyDone[4][0] = true
-	s.alreadyDone[5][0] = true
-	s.alreadyDone[5][1] = true
-	s.alreadyDone[5][2] = true
-	s.alreadyDone[3][1] = true
-
-	s.addNeighborsToQueue(4, 1, red) // (5, 0) and (5, 1) are on outline
-	results := s.cellQueue
-	expected := [][2]int{{4, 2}, {3, 2}}
-
-	err := compareOutlinePoints(results, expected)
-	if err != "" {
-		t.Errorf("Cell Queue. %s", err)
-	}
-}
-
-func TestAddNeighborsToQueueByInnerDiff(t *testing.T) {
-	var s ShapeExtractor
-
-	s.setNeighborEvaluators()
-
-	gridColors := getBigColorGrid()
-	s.Init(gridColors)
-	s.cellQueue = [][2]int{}
-	red := s.grid[0][0]
-
-	s.alreadyDone[2][2] = true
-	s.alreadyDone[3][2] = true
-	s.alreadyDone[4][2] = true
-	s.alreadyDone[5][2] = true
-	s.alreadyDone[5][3] = true
-
-	s.addNeighborsToQueue(3, 3, red)
-	results := s.cellQueue
-	expected := [][2]int{{4, 3}, {4, 4}, {2, 4}, {2, 3}}
-
-	err := compareOutlinePoints(results, expected)
-	if err != "" {
-		t.Errorf("Cell Queue. %s", err)
-	}
-}
-
-/*
- * |  X |  X |  X |  X | X | X |
- * |  X |  0 |  1 |  X | 3 | 4 |
- * | 16 |  c |  c |  2 | c | 5 |
- * | 15 |  X |  X |  c | c | 6 |  // Has base color in middle
- * | 14 |  c |  c |  c | c | 7 |
- * | 13 | 12 | 11 | 10 | 9 | 8 |
- */
-func TestMarkPolygonAlreadyDonePartial(t *testing.T) {
-	var s ShapeExtractor
-	colorGrid := getColorGrid()
-
-	// add a column
-	colorGrid = append(colorGrid, [][4]uint8{
-		{1, 1, 1, 1},
-		{1, 1, 1, 1},
-		{1, 1, 1, 1},
-		{1, 1, 1, 1},
-	})
-
-	// add two rows
-	for index, nextCol := range colorGrid {
-		nextCol = append(nextCol, [4]uint8{1, 1, 1, 1})
-		nextCol = append(nextCol, [4]uint8{1, 1, 1, 1})
-		colorGrid[index] = nextCol
-	}
-
-	otherColor := [4]uint8{9, 9, 9, 9}
-	// fill in other colors
-	for _, nextCol := range colorGrid {
-		nextCol[0] = otherColor
-	}
-	colorGrid[0][1] = otherColor
-	colorGrid[3][1] = otherColor
-	colorGrid[1][3] = otherColor
-	colorGrid[2][3] = otherColor
-
-	s.Init(colorGrid)
-	outlinePoints := [][2]int{
-		{1, 1},
-		{2, 1},
-		{3, 2},
-		{4, 1},
-		{5, 1},
-		{5, 2},
-		{5, 3},
-		{5, 4},
-		{5, 5},
-		{4, 5},
-		{3, 5},
-		{2, 5},
-		{1, 5},
-		{0, 5},
-		{0, 4},
-		{0, 3},
-		{0, 2},
-	}
-
-	s.markPolygonAlreadyDone(outlinePoints)
-
-	results := s.alreadyDone
-	expected := [][]bool{
-		{false, false, true, true, true, true}, //  column 0
-		{false, true, true, false, true, true}, //  column 1
-		{false, true, true, false, true, true},
-		{false, false, true, true, true, true},
-		{false, true, true, true, true, true},
-		{false, true, true, true, true, true},
-	}
-
-	err := compareBoolGrids(results, expected)
-	if err != "" {
-		t.Errorf("Already done. %s", err)
-	}
-}
 
 func TestGetLeftDirectionFromNorth(t *testing.T) {
 	var s ShapeExtractor
@@ -759,166 +508,6 @@ func TestFindOutlineOverlap(t *testing.T) {
 	}
 }
 
-func TestCleanUpPolygonOutline(t *testing.T) {
-	outlinePoints := [][2]int{
-		{1, 1}, // start of second overlap
-		{1, 2}, // start of first purge
-		{1, 3},
-		{2, 3},
-		{3, 3},
-		{3, 2},
-		{2, 2}, // end of first purge
-		{1, 2}, // post first overlap
-		{1, 1}, // post second overlap
-		{2, 1},
-	}
-
-	results := CleanUpPolygonOutline(
-		outlinePoints,
-		[][][2]int{},
-		0,
-	)
-
-	expected := [][][2]int{
-		{ // Main Polygon
-			{1, 1},
-			{2, 1},
-		},
-		{ // Separated-out polygon
-			{1, 2},
-			{1, 3},
-			{2, 3},
-			{3, 3},
-			{3, 2},
-			{2, 2},
-		},
-	}
-
-	err := comparePolygonPointsSlices(results, expected)
-	if err != "" {
-		t.Errorf("Cleaned up Polygons. %s", err)
-	}
-}
-
-func TestCleanUpPolygonOutlineNoOverlaps(t *testing.T) {
-	outlinePoints := [][2]int{
-		{1, 1},
-		{2, 1},
-		{3, 1},
-		{3, 2},
-		{3, 3},
-		{3, 4},
-		{2, 4},
-		{1, 4},
-		{1, 3},
-		{1, 2},
-	}
-
-	results := CleanUpPolygonOutline(
-		outlinePoints,
-		[][][2]int{},
-		0,
-	)
-
-	expected := [][][2]int{outlinePoints}
-
-	err := comparePolygonPointsSlices(results, expected)
-	if err != "" {
-		t.Errorf("Cleaned up Polygons. %s", err)
-	}
-
-}
-
-/*
- * |   |   | X | X | X |
- * | X | X | X | 1 | 2 |
- * | X | 8 | 9 | c | 3 |
- * | 7 | 6 | 5 | 4 | X |
- */
-func TestGetPolygonsFromCell(t *testing.T) {
-	var s ShapeExtractor
-	s.Init(getColorGrid())
-
-	s.grid[1][1] = [4]uint8{9, 9, 9, 9}
-	s.grid[2][1] = [4]uint8{9, 9, 9, 9}
-	s.alreadyDone[0][2] = true
-	s.alreadyDone[0][1] = true
-	s.alreadyDone[2][0] = true
-	s.alreadyDone[3][0] = true
-	s.alreadyDone[4][0] = true
-	s.alreadyDone[4][3] = true
-
-	colX := 3
-	rowY := 1
-	direction := 2
-
-	results := s.GetPolygonsFromCell(colX, rowY, direction, [4]uint8{1, 1, 1, 1})
-	expected := [][][2]int{
-		{
-			{3, 1},
-			{4, 1}, // East
-			{4, 2}, // South
-			{3, 3}, // South-West
-			{0, 3}, // West
-			{1, 2}, // North-East
-			{2, 2}, // East
-		},
-	}
-
-	err := comparePolygonPointsSlices(results, expected)
-	if err != "" {
-		t.Errorf("Polygon outline. %s", err)
-	}
-}
-
-/*
- * |   | X | X | X | X |
- * | X | X | 0 | 1 | 2 |
- * | X | X | 3 | X | X |
- * | 7 | 6 | 5 | 4 | X |
- */
-func TestGetPolygonsFromCellComplicated(t *testing.T) {
-	var s ShapeExtractor
-	s.Init(getColorGrid())
-
-	s.grid[1][0] = [4]uint8{9, 9, 9, 9}
-	s.grid[1][1] = [4]uint8{9, 9, 9, 9}
-	s.grid[1][2] = [4]uint8{9, 9, 9, 9}
-	s.alreadyDone[0][1] = true
-	s.alreadyDone[0][2] = true
-	s.alreadyDone[2][0] = true
-	s.alreadyDone[3][0] = true
-	s.alreadyDone[4][0] = true
-	s.alreadyDone[3][2] = true
-	s.alreadyDone[4][2] = true
-	s.alreadyDone[4][3] = true
-
-	colX := 2
-	rowY := 1
-	direction := 2
-
-	results := s.GetPolygonsFromCell(colX, rowY, direction, [4]uint8{1, 1, 1, 1})
-	expected := [][][2]int{
-		{
-			{2, 1},
-			{3, 1}, // East
-			// [2]int{4, 1}, // East - purged
-			{2, 2}, // South
-		},
-		{
-			{2, 2},
-			{3, 3}, // South-East
-			{2, 3}, // West
-			{1, 3}, // West
-			// [2]int{0, 3}, // West - purged
-		},
-	}
-
-	err := comparePolygonPointsSlices(results, expected)
-	if err != "" {
-		t.Errorf("Polygon outline. %s", err)
-	}
-}
 
 /*
  *     0   1   2   3   4
@@ -931,7 +520,7 @@ func TestProcessAllPolygons(t *testing.T) {
 	var s ShapeExtractor
 	s.Init(getColorGrid())
 
-	expectedDone := s.alreadyDone
+	expectedDone := getAlreadyUsedFromGrid(s.grid)
 
 	// Color the B cells
 	BColRows := [][]int{
@@ -944,7 +533,7 @@ func TestProcessAllPolygons(t *testing.T) {
 
 	for colIndex, nextCol := range BColRows {
 		for _, nextRow := range nextCol {
-			s.grid[colIndex][nextRow] = [4]uint8{2, 2, 2, 2}
+			s.grid[colIndex][nextRow] = GridCell{Color: Color{2, 2, 2, 2}}
 		}
 	}
 
@@ -959,7 +548,7 @@ func TestProcessAllPolygons(t *testing.T) {
 
 	for colIndex, nextCol := range CColRows {
 		for _, nextRow := range nextCol {
-			s.grid[colIndex][nextRow] = [4]uint8{3, 3, 3, 3}
+			s.grid[colIndex][nextRow] = GridCell{Color: Color{3, 3, 3, 3}}
 		}
 	}
 
@@ -968,11 +557,11 @@ func TestProcessAllPolygons(t *testing.T) {
 	results := allPolygons
 	expected := []Polygon{
 		{ // A's
-			ColorRGBA: [4]uint8{1, 1, 1, 1},
+			ColorRGBA: Color{1, 1, 1, 1},
 			Points:    [][2]int{{0, 0}, {1, 0}, {0, 1}},
 		},
 		{ // B's
-			ColorRGBA: [4]uint8{2, 2, 2, 2},
+			ColorRGBA: Color{2, 2, 2, 2},
 			Points: [][2]int{
 				{2, 0},
 				// [2]int{3, 0}, // reduced into next one, since in a line
@@ -985,11 +574,11 @@ func TestProcessAllPolygons(t *testing.T) {
 			},
 		},
 		{ // C1
-			ColorRGBA: [4]uint8{3, 3, 3, 3},
+			ColorRGBA: Color{3, 3, 3, 3},
 			Points:    [][2]int{{4, 2}, {4, 3}, {3, 3}},
 		},
 		{ // C2
-			ColorRGBA: [4]uint8{3, 3, 3, 3},
+			ColorRGBA: Color{3, 3, 3, 3},
 			Points:    [][2]int{{0, 2}, {1, 3}, {0, 3}},
 		},
 	}
@@ -1000,7 +589,7 @@ func TestProcessAllPolygons(t *testing.T) {
 		return
 	}
 
-	resultsDone := s.alreadyDone
+	resultsDone := getAlreadyUsedFromGrid(s.grid)
 	expectedDone[1] = []bool{false, true, true, false}
 	expectedDone[2] = []bool{true, true, true, false}
 	expectedDone[3] = []bool{true, true, true, false}
@@ -1024,14 +613,14 @@ func TestGetAllShapes(t *testing.T) {
 	s.Init(getColorGrid())
 
 	// Color B cell
-	s.grid[0][0] = [4]uint8{2, 2, 2, 2}
+	s.grid[0][0] = GridCell{Color: Color{2, 2, 2, 2}}
 
 	// Color C cells
-	s.grid[0][2] = [4]uint8{3, 3, 3, 3}
-	s.grid[0][3] = [4]uint8{3, 3, 3, 3}
-	s.grid[1][3] = [4]uint8{3, 3, 3, 3}
-	s.grid[4][2] = [4]uint8{3, 3, 3, 3}
-	s.grid[4][3] = [4]uint8{3, 3, 3, 3}
+	s.grid[0][2] = GridCell{Color: Color{3, 3, 3, 3}}
+	s.grid[0][3] = GridCell{Color: Color{3, 3, 3, 3}}
+	s.grid[1][3] = GridCell{Color: Color{3, 3, 3, 3}}
+	s.grid[4][2] = GridCell{Color: Color{3, 3, 3, 3}}
+	s.grid[4][3] = GridCell{Color: Color{3, 3, 3, 3}}
 
 	allPolygons, allLines := s.GetAllShapes()
 
@@ -1098,14 +687,14 @@ func TestGetSVGText(t *testing.T) {
 	s.Init(getColorGrid())
 
 	// Color B cell
-	s.grid[0][0] = [4]uint8{2, 2, 222, 2}
+	s.grid[0][0] = GridCell{Color: Color{2, 2, 222, 2}}
 
 	// Color C cells
-	s.grid[0][2] = [4]uint8{223, 3, 3, 3}
-	s.grid[0][3] = [4]uint8{223, 3, 3, 3}
-	s.grid[1][3] = [4]uint8{223, 3, 3, 3}
-	s.grid[4][2] = [4]uint8{223, 3, 3, 3}
-	s.grid[4][3] = [4]uint8{223, 3, 3, 3}
+	s.grid[0][2] = GridCell{Color: Color{223, 3, 3, 3}}
+	s.grid[0][3] = GridCell{Color: Color{223, 3, 3, 3}}
+	s.grid[1][3] = GridCell{Color: Color{223, 3, 3, 3}}
+	s.grid[4][2] = GridCell{Color: Color{223, 3, 3, 3}}
+	s.grid[4][3] = GridCell{Color: Color{223, 3, 3, 3}}
 
 	results := s.GetSVGText()
 	expected := `<svg width="5" height="4">
