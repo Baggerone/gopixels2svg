@@ -180,6 +180,7 @@ func isStartPositionValid(shapeExtr *ShapeExtractor, column, row int, shapeCell 
 	if shapeExtr.cellIsAtBottom(row) {
 		return false
 	}
+
 	return makesTriangleToRight(shapeExtr, column, row, shapeCell) ||
 		makesTriangleToLowerLeft(shapeExtr, column, row, shapeCell)
 }
@@ -495,6 +496,7 @@ func getShapeColumnsToOneSide(
 		)
 
 		shape.References[nextColumn] = [2]int{nextUpperRow, nextLowerRow}
+		setSubColumnAlreadyUsed(shapeExtr, nextColumn, nextUpperRow, nextLowerRow)
 
 		if shapeExtr.cellIsAtRightOrLeft(lookingToEast, nextColumn) {
 			break
@@ -533,6 +535,12 @@ func getShapeColumnsToLeft(shapeExtr *ShapeExtractor, previousColumn, startRow, 
 	return getShapeColumnsToOneSide(shapeExtr, false, previousColumn, startRow, lowestRow, shape)
 }
 
+func setSubColumnAlreadyUsed(shapeExtr *ShapeExtractor, column, startRow, endRow int) {
+	for usedRow := startRow; usedRow <= endRow; usedRow++ {
+		shapeExtr.grid[column][usedRow].AlreadyUsed = true
+	}
+}
+
 func getShapeStartingAtCellReference(shapeExtr *ShapeExtractor, startColumn, startRow int) Shape {
 	shape := Shape{
 		References: map[int][2]int{},
@@ -553,11 +561,52 @@ func getShapeStartingAtCellReference(shapeExtr *ShapeExtractor, startColumn, sta
 
 	// Record startcolumn in the shape
 	shape.References[startColumn] = [2]int{startRow, startColumnLowerRow}
+	setSubColumnAlreadyUsed(shapeExtr, startColumn, startRow, startColumnLowerRow)
 
 	shape = getShapeColumnsToRight(shapeExtr, startColumn, startRow, startColumnLowerRow, shape)
 	shape = getShapeColumnsToLeft(shapeExtr, startColumn, startRow, startColumnLowerRow, shape)
 
 	return shape
+}
+
+func addPolygonPointAlongColumnTops(colIndex int, shape Shape, polygonRefs [][2]int) [][2]int {
+	currentTopRow := shape.References[colIndex][0]
+	polygonRefs = append(polygonRefs, [2]int{colIndex, currentTopRow})
+
+	nextTopRow := shape.References[colIndex + 1][0]
+
+	// If the top of the next column is more than one lower than the top of the current column,
+	//  add the point on the current column that is one row higher than the top of the next column
+	if nextTopRow > currentTopRow + 1 {
+		polygonRefs = append(polygonRefs, [2]int{colIndex, nextTopRow - 1})
+
+		// If the top of the next column is more than one higher than the top of the current column,
+		//   add the point next to the top of the current column but one up
+	} else if nextTopRow < currentTopRow - 1 {
+		polygonRefs = append(polygonRefs, [2]int{colIndex + 1, currentTopRow - 1})
+	}
+
+	return polygonRefs
+}
+
+func addPolygonPointAlongColumnBottoms(colIndex int, shape Shape, polygonRefs [][2]int) [][2]int {
+	currentBottomRow := shape.References[colIndex][1]
+	polygonRefs = append(polygonRefs, [2]int{colIndex, currentBottomRow})
+
+	nextBottomRow := shape.References[colIndex - 1][1]
+
+	// If the bottom of the next column (to the left) is more than one higher than the bottom of the current column,
+	//  add the point on the current column that is one row lower than the bottom of the next column
+	if nextBottomRow < currentBottomRow - 1 {
+		polygonRefs = append(polygonRefs, [2]int{colIndex, nextBottomRow + 1})
+
+		// If the bottom of the next column is more than one lower than the bottom of the current column,
+		//   add the point next to the bottom of the current column but one down
+	} else if nextBottomRow > currentBottomRow + 1 {
+		polygonRefs = append(polygonRefs, [2]int{colIndex - 1, currentBottomRow + 1})
+	}
+
+	return polygonRefs
 }
 
 func getPolygonFromShape(shape Shape) (Polygon, error) {
@@ -584,64 +633,44 @@ func getPolygonFromShape(shape Shape) (Polygon, error) {
 
 	// If the top of the next column is more than one higher than the top of the first column,
 	//   add the point next to the top of the first column but one up
-	if nextTopRow > firstTopRow + 1 {
+	if nextTopRow < firstTopRow - 1 {
 		polygonRefs = append(polygonRefs, [2]int{nextColumn, firstTopRow - 1})
 	}
 
    // Start at left most column and move to the right along the top of the shape
 	for colIndex := firstColumn + 1; colIndex < lastColumn; colIndex++ {
-		currentTopRow := shape.References[colIndex][0]
-		polygonRefs = append(polygonRefs, [2]int{colIndex, currentTopRow})
-
-		nextTopRow := shape.References[colIndex + 1][0]
-
-		// If the top of the next column is more than one lower than the top of the current column,
-		//  add the point on the current column that is one row lower than the top of the next column
-		if nextTopRow > currentTopRow + 1 {
-			polygonRefs = append(polygonRefs, [2]int{colIndex, nextTopRow - 1})
-
-		// If the top of the next column is more than one higher than the top of the current column,
-		//   add the point next to the top of the current column but one up
-		} else if nextTopRow < currentTopRow - 1 {
-			polygonRefs = append(polygonRefs, [2]int{colIndex + 1, currentTopRow - 1})
-		}
+		polygonRefs = addPolygonPointAlongColumnTops(colIndex, shape, polygonRefs)
 	}
 
-	// Add the points from the last column
-	polygonRefs = append(polygonRefs, [2]int{lastColumn, shape.References[lastColumn][0]})
-	polygonRefs = append(polygonRefs, [2]int{lastColumn, shape.References[lastColumn][1]})
+	// Add the points from the right-most column
+	rightTop := shape.References[lastColumn][0]
+	rightBottom := shape.References[lastColumn][1]
+	polygonRefs = append(polygonRefs, [2]int{lastColumn, rightTop})
+
+	if rightBottom != rightTop {
+		polygonRefs = append(polygonRefs, [2]int{lastColumn, rightBottom})
+	}
 
 	lastBottomRow := shape.References[lastColumn][1]
 
 	nextColumn = columnRefs[len(columnRefs) - 2]
 	nextBottomRow := shape.References[nextColumn][1]
 
-	// If the bottom of the second to right column is more than one lower than the bottom of the right most column,
+	// If the bottom of the second to right column is more than one lower than the bottom of the right-most column,
 	//   add the point next to the bottom of the right most column but one lower
 	if nextBottomRow > lastBottomRow + 1 {
 		polygonRefs = append(polygonRefs, [2]int{nextColumn, lastBottomRow + 1})
 	}
 
-	// Start at right most column and move to the left along the bottom of the shape
+	// Start at right-most column and move to the left along the bottom of the shape
 	for colIndex := lastColumn - 1; colIndex > firstColumn; colIndex-- {
-		currentBottomRow := shape.References[colIndex][1]
-		polygonRefs = append(polygonRefs, [2]int{colIndex, currentBottomRow})
-
-		nextBottomRow := shape.References[colIndex - 1][1]
-
-		// If the bottom of the next column (to the left) is more than one higher than the bottom of the current column,
-		//  add the point on the current column that is one row lower than the bottom of the next column
-		if nextBottomRow < currentBottomRow - 1 {
-			polygonRefs = append(polygonRefs, [2]int{colIndex, nextBottomRow + 1})
-
-			// If the bottom of the next column is more than one lower than the bottom of the current column,
-			//   add the point next to the bottom of the current column but one up
-		} else if nextBottomRow > currentBottomRow + 1 {
-			polygonRefs = append(polygonRefs, [2]int{colIndex - 1, currentBottomRow + 1})
-		}
+		polygonRefs = addPolygonPointAlongColumnBottoms(colIndex, shape, polygonRefs)
 	}
 
-	polygonRefs = append(polygonRefs, [2]int{firstColumn, shape.References[firstColumn][1]})
+	finalPoint := [2]int{firstColumn, shape.References[firstColumn][1]}
+	if finalPoint != polygonRefs[0] {
+		polygonRefs = append(polygonRefs, finalPoint)
+	}
 
 	polygon := Polygon{
 		ColorRGBA: shape.Color,

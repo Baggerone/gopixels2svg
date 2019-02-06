@@ -552,7 +552,7 @@ func TestProcessAllPolygons(t *testing.T) {
 		}
 	}
 
-	allPolygons := s.ProcessAllPolygons()
+	allPolygons, _ := s.ProcessAllPolygons()
 
 	results := allPolygons
 	expected := []Polygon{
@@ -563,23 +563,23 @@ func TestProcessAllPolygons(t *testing.T) {
 		{ // B's
 			ColorRGBA: Color{2, 2, 2, 2},
 			Points: [][2]int{
+				{1, 1},
 				{2, 0},
-				// [2]int{3, 0}, // reduced into next one, since in a line
+				{3, 0},
 				{4, 0},
-				{3, 1}, // gets reduced into next one, since in a line
+				{3, 1},
 				{3, 2},
 				{2, 3},
 				{1, 2},
-				{1, 1},
 			},
-		},
-		{ // C1
-			ColorRGBA: Color{3, 3, 3, 3},
-			Points:    [][2]int{{4, 2}, {4, 3}, {3, 3}},
 		},
 		{ // C2
 			ColorRGBA: Color{3, 3, 3, 3},
 			Points:    [][2]int{{0, 2}, {1, 3}, {0, 3}},
+		},
+		{ // C1
+			ColorRGBA: Color{3, 3, 3, 3},
+			Points:    [][2]int{{3, 3}, {4, 2}, {4, 3}},
 		},
 	}
 
@@ -590,9 +590,11 @@ func TestProcessAllPolygons(t *testing.T) {
 	}
 
 	resultsDone := getAlreadyUsedFromGrid(s.grid)
-	expectedDone[1] = []bool{false, true, true, false}
-	expectedDone[2] = []bool{true, true, true, false}
-	expectedDone[3] = []bool{true, true, true, false}
+	expectedDone[0] = []bool{true, true, true, true} // column 0
+	expectedDone[1] = []bool{true, true, true, true}
+	expectedDone[2] = []bool{true, true, true, true}
+	expectedDone[3] = []bool{true, true, true, true}
+	expectedDone[4] = []bool{true, false, true, true} // The high C is an orphan
 
 	err = compareBoolGrids(resultsDone, expectedDone)
 	if err != "" {
@@ -622,7 +624,7 @@ func TestGetAllShapes(t *testing.T) {
 	s.grid[4][2] = GridCell{Color: Color{3, 3, 3, 3}}
 	s.grid[4][3] = GridCell{Color: Color{3, 3, 3, 3}}
 
-	allPolygons, allLines := s.GetAllShapes()
+	allPolygons, allLines, _ := s.GetAllShapes()
 
 	results := allPolygons
 	expected := []Polygon{

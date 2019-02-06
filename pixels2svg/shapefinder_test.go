@@ -249,6 +249,43 @@ func compareShapeReferences(results, expected Shape) string {
 
 	return ""
 }
+
+func compareGridsAlreadyUsed(results, expected Grid) string {
+
+	if len(results) != len(expected) {
+		return fmt.Sprintf(
+			"Wrong number of columns. Expected %d, but got %d.",
+			len(expected),
+			len(results),
+		)
+	}
+
+	if len(expected) > 0 && len(results[0]) != len(expected[0]) {
+		return fmt.Sprintf(
+			"Wrong number of rows. Expected %d, but got %d.",
+			len(expected[0]),
+			len(results[0]),
+		)
+	}
+
+	for colIndex, expectedColumn := range expected {
+		for rowIndex, expectedCell := range expectedColumn {
+			resultsCell := results[colIndex][rowIndex]
+			if expectedCell.AlreadyUsed != resultsCell.AlreadyUsed {
+				return fmt.Sprintf(
+					"Wrong cell value in column %d, row %d. Expected %v, but got %v.",
+					colIndex,
+					rowIndex,
+					expectedCell.AlreadyUsed,
+					resultsCell.AlreadyUsed,
+				)
+			}
+		}
+	}
+	return ""
+}
+
+
 func TestInitGrid(t *testing.T) {
 	textGrid := `
 r.g.b
@@ -1935,6 +1972,30 @@ b.b.r.b.b`
 		t.Errorf(errMsg)
 		return
 	}
+
+	usedTrue := GridCell{AlreadyUsed: true}
+	usedFalse := GridCell{AlreadyUsed: false}
+
+	resultsGrid := shapeExtr.grid
+	expectedGrid := Grid{
+		// Column 0
+		{usedFalse, usedFalse, usedFalse, usedFalse, usedFalse},
+	 	// Column 1
+		{usedFalse, usedFalse, usedFalse, usedTrue, usedFalse},
+		 // Column 2
+		{usedFalse, usedTrue, usedTrue, usedTrue, usedTrue},
+		// Column 3
+		{usedFalse, usedFalse, usedTrue, usedFalse, usedFalse},
+		// Column 4
+		{usedFalse, usedFalse, usedFalse, usedFalse, usedFalse},
+	}
+
+	errMsg = compareGridsAlreadyUsed(resultsGrid, expectedGrid)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		return
+	}
+
 }
 
 func TestGetShapeStartingAtCellReference__BigComplicatedOne(t *testing.T) {
@@ -1985,6 +2046,47 @@ b.b.b.b.b.r.b.b.r.b.b.r.b.b`
 		t.Errorf(errMsg)
 		return
 	}
+
+	uTrue := GridCell{AlreadyUsed: true}
+	uFalse := GridCell{AlreadyUsed: false}
+
+	resultsGrid := shapeExtr.grid
+	expectedGrid := Grid{
+		// Column 0
+		{uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse},
+		// Column 1
+		{uFalse, uFalse, uFalse, uTrue, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse},
+		// Column 2
+		{uFalse, uTrue, uTrue, uTrue, uTrue, uTrue, uTrue, uFalse, uFalse, uFalse, uFalse},
+		// Column 3
+		{uTrue, uTrue, uTrue, uTrue, uTrue, uTrue, uFalse, uFalse, uFalse, uFalse, uFalse},
+		// Column 4
+		{uFalse, uFalse, uFalse, uTrue, uTrue, uTrue, uTrue, uFalse, uFalse, uFalse, uFalse},
+		// Column 5
+		{uFalse, uTrue, uTrue, uTrue, uTrue, uTrue, uTrue, uTrue, uFalse, uFalse, uFalse},
+		// Column 6
+		{uFalse, uFalse, uTrue, uTrue, uTrue, uTrue, uFalse, uFalse, uFalse, uFalse, uFalse},
+		// Column 7
+		{uFalse, uTrue, uTrue, uTrue, uTrue, uTrue, uTrue, uTrue, uFalse, uFalse, uFalse},
+		// Column 8
+		{uFalse, uFalse, uFalse, uTrue, uTrue, uTrue, uTrue, uTrue, uTrue, uFalse, uFalse},
+		// Column 9
+		{uFalse, uFalse, uTrue, uTrue, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse},
+		// Column 10
+		{uFalse, uFalse, uTrue, uTrue, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse},
+		// Column 11
+		{uFalse, uTrue, uTrue, uTrue, uTrue, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse},
+		// Column 12
+		{uFalse, uFalse, uFalse, uTrue, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse},
+		// Column 13
+		{uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse, uFalse},
+	}
+
+	errMsg = compareGridsAlreadyUsed(resultsGrid, expectedGrid)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		return
+	}
 }
 
 func TestGetPolygonFromShape__SideColumnsTaller(t *testing.T) {
@@ -2027,8 +2129,7 @@ r.b.b.b.r`
 }
 
 
-
-func TestGetPolygonFromShape__ExtremeChanges(t *testing.T) {
+func TestGetPolygonFromShape__ExtremeVariationsInColumns(t *testing.T) {
 
 	textGrid := `
 b.r.r.b.b

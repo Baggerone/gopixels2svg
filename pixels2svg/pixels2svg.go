@@ -326,12 +326,26 @@ func (s *ShapeExtractor) Init(grid Grid) {
 	s.grid = grid
 }
 
-func (s *ShapeExtractor) ProcessAllPolygons() []Polygon {
-//	startDirection := 2
+func (s *ShapeExtractor) ProcessAllPolygons() ([]Polygon, error) {
 	allPolygons := []Polygon{}
 
+	for row := 0; row < s.RowCount; row++ {
+		for column := 0; column < s.ColCount; column++ {
+			shape := getShapeStartingAtCellReference(s, column, row)
+			if len(shape.References) < 2 { // must have at least two columns represented
+				continue
+			}
 
-	return allPolygons
+			nextPolygon, err := getPolygonFromShape(shape)
+			if err != nil {
+				return allPolygons, err
+			}
+
+			allPolygons = append(allPolygons, nextPolygon)
+		}
+	}
+
+	return allPolygons, nil
 }
 
 /*
@@ -354,16 +368,19 @@ func (s *ShapeExtractor) ProcessAllLines() []Line {
 	return allLines
 }
 
-func (s *ShapeExtractor) GetAllShapes() ([]Polygon, []Line) {
+func (s *ShapeExtractor) GetAllShapes() ([]Polygon, []Line, error) {
 	s.setNeighborEvaluators()
-	allPolygons := s.ProcessAllPolygons()
+	allPolygons, err := s.ProcessAllPolygons()
+	if err != nil {
+		return allPolygons, []Line{}, err
+	}
 	allLines := s.ProcessAllLines()
 
-	return allPolygons, allLines
+	return allPolygons, allLines, nil
 }
 
 func (s *ShapeExtractor) GetSVGText() string {
-	allPolygons, allLines := s.GetAllShapes()
+	allPolygons, allLines, _ := s.GetAllShapes()
 
 	svgWidth := s.ColCount
 	svgHeight := s.RowCount
