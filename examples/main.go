@@ -10,42 +10,44 @@ import (
 )
 
 // Transpose a grid from row by column to column by row
-func transposeGrid(grid [][][4]uint8) [][][4]uint8 {
-	newGrid := [][][4]uint8{}
+func transposeGrid(grid pixels2svg.Grid) pixels2svg.Grid {
+	newGrid := pixels2svg.Grid{}
+	rowCount := len(grid)
+	colCount := len(grid[0])
 
-	// initialize new grid
-	for range grid[0] {
-		newColumn := [][4]uint8{}
-		for range grid {
-			newColumn = append(newColumn, [4]uint8{})
+	for i := 0; i < colCount; i++ {
+		newCol := []pixels2svg.GridCell{}
+		for j := 0; j < rowCount; j++ {
+			newCol = append(newCol, pixels2svg.GridCell{})
 		}
-		newGrid = append(newGrid, newColumn)
+		newGrid = append(newGrid, newCol)
 	}
 
-	// populate new grid
-	for rowY, row := range grid {
-		for colX, cell := range row {
-			newGrid[colX][rowY] = cell
+	for rowIndex, row := range grid {
+		for colIndex, colValue := range row {
+			newGrid[colIndex][rowIndex].Color = colValue.Color
 		}
 	}
 	return newGrid
 }
 
-func assignColorsToGrid(image []string, colors map[string][4]uint8) [][][4]uint8 {
-	grid := [][][4]uint8{}
+func assignColorsToGrid(image []string, colors map[string][4]uint8) pixels2svg.Grid {
+	grid := [][]pixels2svg.GridCell{}
 
 	for _, row := range image {
-		newRow := [][4]uint8{}
+		gridRow := []pixels2svg.GridCell{}
 		for _, colorCode := range row {
-			newRow = append(newRow, colors[string(colorCode)])
+			gridRow = append(
+				gridRow,
+				pixels2svg.GridCell{Color: colors[string(colorCode)]})
 		}
-		grid = append(grid, newRow)
+		grid = append(grid, gridRow)
 	}
 
 	return transposeGrid(grid)
 }
 
-func sailboat() [][][4]uint8 {
+func sailboat() pixels2svg.Grid {
 	image := []string{
 		"           m        ",
 		"           m        ",
@@ -79,7 +81,7 @@ func convertToUint8(rgbTone uint32) uint8 {
 	return uint8(rgbTone / 0x101)
 }
 
-func ReadPNGPixels(filePath string) ([][][4]uint8, error) {
+func ReadPNGPixels(filePath string) (pixels2svg.Grid, error) {
 
 	var infile *os.File
 	var err error
@@ -98,11 +100,11 @@ func ReadPNGPixels(filePath string) ([][][4]uint8, error) {
 		return nil, err
 	}
 
-	colorGrid := [][][4]uint8{}
+	colorGrid := pixels2svg.Grid{}
 	bounds := src.Bounds()
 	width, height := bounds.Max.X, bounds.Max.Y
 	for x := 0; x < width; x++ {
-		newCol := [][4]uint8{}
+		newCol := []pixels2svg.GridCell{}
 		for y := 0; y < height; y++ {
 			red, green, blue, _ := src.At(x, y).RGBA()
 			red8 := convertToUint8(red)
@@ -110,7 +112,7 @@ func ReadPNGPixels(filePath string) ([][][4]uint8, error) {
 			blue8 := convertToUint8(blue)
 
 			colorRGBA := [4]uint8{red8, green8, blue8, 255}
-			newCol = append(newCol, colorRGBA)
+			newCol = append(newCol, pixels2svg.GridCell{Color: colorRGBA})
 		}
 		colorGrid = append(colorGrid, newCol)
 	}
@@ -136,7 +138,7 @@ func addError(errors *[]string, summary string, err error) {
 func main() {
 	errors := []string{}
 	var s pixels2svg.ShapeExtractor
-	var colorGrid [][][4]uint8
+	var colorGrid pixels2svg.Grid
 	var err error
 
 	s.Init(sailboat())
