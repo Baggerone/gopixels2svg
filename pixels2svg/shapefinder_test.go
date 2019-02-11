@@ -467,7 +467,7 @@ b.g.b`
 
 // Given a start position on a Red cell with non-Red cells to its south and southwest
 // the function should return false
-func TestIsStartPositionValidFalseBadCellsToSouthAndSouthWest(t *testing.T) {
+func TestIsStartPositionValid__FalseBadCellsToSouthAndSouthWest(t *testing.T) {
 
 	textGrid := `
 g.g.b
@@ -490,7 +490,7 @@ b.g.r`
 
 // Given a start position on a Red cell with used Red cells to its south and southwest
 // the function should return false
-func TestIsStartPositionValidFalseAlreadyUsedCellsToSouthAndSouthWest(t *testing.T) {
+func TestIsStartPositionValid__FalseAlreadyUsedCellsToSouthAndSouthWest(t *testing.T) {
 
 	textGrid := `
 g.g.b
@@ -520,7 +520,7 @@ r.r.r`
 
 // Given a start position on a Red cell with non-Red cells to its south and southeast
 // the function should return false
-func TestIsStartPositionValidFalseBadCellsToSouthAndSouthEast(t *testing.T) {
+func TestIsStartPositionValid__FalseBadCellsToSouthAndSouthEast(t *testing.T) {
 
 	textGrid := `
 g.g.b
@@ -543,7 +543,7 @@ r.g.g`
 
 // Given a start position on a the eastern edge and a cell with a different color to the south
 // the function should return false
-func TestIsStartPositionValidFalseOnEasternEdge(t *testing.T) {
+func TestIsStartPositionValid__FalseOnEasternEdge(t *testing.T) {
 
 	textGrid := `
 r.r.b
@@ -566,7 +566,7 @@ b.r.g`
 
 // Given a start position on a the southern edge
 // the function should return false
-func TestIsStartPositionValidFalseOnSouthernEdge(t *testing.T) {
+func TestIsStartPositionValid__FalseOnSouthernEdge(t *testing.T) {
 
 	textGrid := `
 r.r.b
@@ -589,7 +589,7 @@ b.r.g`
 
 // Given a start position with the same color to the south and east
 // the function should return true
-func TestIsStartPositionValidTrueGoodCellsToTheSouthAndEast(t *testing.T) {
+func TestIsStartPositionValid__TrueGoodCellsToTheSouthAndEast(t *testing.T) {
 
 	textGrid := `
 r.r.b
@@ -612,7 +612,7 @@ b.r.g`
 
 // Given a start position with the same color to the south and southeast
 // the function should return true
-func TestIsStartPositionValidTrueGoodCellsToTheSouthAndSouthEast(t *testing.T) {
+func TestIsStartPositionValid__TrueGoodCellsToTheSouthAndSouthEast(t *testing.T) {
 
 	textGrid := `
 g.r.b
@@ -635,7 +635,7 @@ b.r.g`
 
 // Given a start position with the same color to the east and southeast
 // the function should return true
-func TestIsStartPositionValidTrueGoodCellsToTheEastAndSouthEast(t *testing.T) {
+func TestIsStartPositionValid__TrueGoodCellsToTheEastAndSouthEast(t *testing.T) {
 
 	textGrid := `
 g.g.b
@@ -658,7 +658,7 @@ b.g.r`
 
 // Given a start position with the same color to the south and southwest
 // the function should return true
-func TestIsStartPositionValidTrueGoodCellsToTheSouthAndSouthWest(t *testing.T) {
+func TestIsStartPositionValid__TrueGoodCellsToTheSouthAndSouthWest(t *testing.T) {
 
 	textGrid := `
 g.g.b
@@ -679,7 +679,7 @@ b.r.r`
 	}
 }
 
-func TestFindRowOfLowerCellInStartingColumnSameAsStartRowBecauseDifferentColor(t *testing.T) {
+func TestFindRowOfLowerCellInStartingColumn__SameAsStartRowBecauseDifferentColor(t *testing.T) {
 
 	textGrid := `
 b.b.b
@@ -707,7 +707,7 @@ b.r.g`
 	}
 }
 
-func TestFindRowOfLowerCellInStartingColumnRightBelowStartRowAtBottomOfGrid(t *testing.T) {
+func TestFindRowOfLowerCellInStartingColumn__RightBelowStartRowAtBottomOfGrid(t *testing.T) {
 
 	textGrid := `
 b.b.b
@@ -735,7 +735,7 @@ b.r.g`
 	}
 }
 
-func TestFindRowOfLowerCellInStartingColumnFartherDownTheColumnButNotAtBottom(t *testing.T) {
+func TestFindRowOfLowerCellInStartingColumn__FartherDownTheColumnButNotAtBottom(t *testing.T) {
 
 	textGrid := `
 b.r.r
@@ -765,7 +765,7 @@ b.r.g`
 	}
 }
 
-func TestFindRowOfLowerCellInStartingColumnFartherDownTheColumnAtBottom(t *testing.T) {
+func TestFindRowOfLowerCellInStartingColumn__FartherDownTheColumnAtBottom(t *testing.T) {
 
 	textGrid := `
 b.r.r
@@ -794,7 +794,7 @@ b.r.g`
 	}
 }
 
-func TestIsSubColumnOneColorTrueAdjacentRows(t *testing.T) {
+func TestIsSubColumnOneColor__TrueAdjacentRows(t *testing.T) {
 	textGrid := `
 b.r.r
 r.r.r
@@ -811,7 +811,7 @@ b.b.g`
 
 }
 
-func TestIsSubColumnOneColorTrueSeparatedRows(t *testing.T) {
+func TestIsSubColumnOneColor__TrueSeparatedRows(t *testing.T) {
 	textGrid := `
 b.r.r
 r.r.r
@@ -827,7 +827,7 @@ b.r.g`
 	}
 
 }
-func TestIsSubColumnOneColorFalse(t *testing.T) {
+func TestIsSubColumnOneColor__False(t *testing.T) {
 	textGrid := `
 b.r.r
 r.b.r
@@ -843,7 +843,7 @@ b.r.g`
 	}
 
 }
-func TestFindNewStartRowGoingUpToTop(t *testing.T) {
+func TestFindUpperRowForNextColumn__GoingUpToTop(t *testing.T) {
 	textGrid := `
 b.r.r
 b.r.r
@@ -864,7 +864,7 @@ b.r.g`
 	}
 }
 
-func TestFindNewStartRowGoingUpOne(t *testing.T) {
+func TestFindUpperRowForNextColumn__GoingUpOne(t *testing.T) {
 	textGrid := `
 b.r.b
 b.r.b
@@ -885,7 +885,7 @@ b.r.g`
 	}
 }
 
-func TestFindNewStartRowSameAsStart(t *testing.T) {
+func TestFindUpperRowForNextColumn__SameAsStart(t *testing.T) {
 	textGrid := `
 b.r.b
 b.r.b
@@ -906,7 +906,7 @@ b.r.g`
 	}
 }
 
-func TestFindNewStartRowGoingDownAtBottom(t *testing.T) {
+func TestFindUpperRowForNextColumn__GoingDownAtBottom(t *testing.T) {
 	textGrid := `
 b.r.b
 b.r.b
@@ -927,7 +927,7 @@ b.r.r`
 	}
 }
 
-func TestFindNewStartRowGoingDownOne(t *testing.T) {
+func TestFindUpperRowForNextColumn__GoingDownOne(t *testing.T) {
 	textGrid := `
 b.r.b
 b.r.b
