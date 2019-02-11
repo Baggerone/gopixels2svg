@@ -194,7 +194,7 @@ func getAlreadyUsedFromGrid(grid Grid) [][]bool {
 	return used
 }
 
-// TODO: This should cause a failure because of the internal reds from 7, 7, but it doesn't
+
 /*
  *    0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17
  *  0 r  r  r  r  r  r  y  y  y  y  y  y  g  g  g  g  g  g
@@ -232,7 +232,7 @@ func getBigColorGrid() Grid {
 	for colX := 6; colX < 12; colX++ {
 		nextCol := []GridCell{}
 		for rowY := 0; rowY < 12; rowY++ {
-			if rowY < 2+colX-6 {
+			if rowY < (1 + colX - 6) {
 				nextCol = append(nextCol, GridCell{Color: yellow})
 			} else {
 				nextCol = append(nextCol, GridCell{Color: blue})
@@ -257,6 +257,13 @@ func getBigColorGrid() Grid {
 		}
 	}
 
+	// Add Red rectangle in middle of Blue triangle
+	for colX := 7; colX < 9; colX++ {
+		for rowY := 7; rowY < 11; rowY++ {
+			grid[colX][rowY] = GridCell{Color: red}
+		}
+	}
+
 	// Add a line in middle of Left Rectangle
 	for rowY := 4; rowY < 8; rowY++ {
 		grid[3][rowY] = GridCell{Color: blue}
@@ -266,7 +273,7 @@ func getBigColorGrid() Grid {
 }
 
 
-func TestGetLineHorizontalWhole(t *testing.T) {
+func TestGetLine__HorizontalWhole(t *testing.T) {
 	var s ShapeExtractor
 	s.Init(getColorGrid())
 
@@ -289,7 +296,7 @@ func TestGetLineHorizontalWhole(t *testing.T) {
 	}
 }
 
-func TestGetLineHorizontalPartial(t *testing.T) {
+func TestGetLine__HorizontalPartial(t *testing.T) {
 	var s ShapeExtractor
 	s.Init(getColorGrid())
 	s.grid[s.ColCount-1][1] = GridCell{Color: [4]uint8{9, 9, 9, 9}}
@@ -312,7 +319,7 @@ func TestGetLineHorizontalPartial(t *testing.T) {
 	}
 }
 
-func TestGetLineLastColumnWhole(t *testing.T) {
+func TestGetLine__LastColumnWhole(t *testing.T) {
 	var s ShapeExtractor
 	s.Init(getColorGrid())
 
@@ -335,7 +342,7 @@ func TestGetLineLastColumnWhole(t *testing.T) {
 	}
 }
 
-func TestGetLineVerticalPartial(t *testing.T) {
+func TestGetLine__VerticalPartial(t *testing.T) {
 	var s ShapeExtractor
 	s.Init(getColorGrid())
 	s.grid[1][0].AlreadyUsed =  true
@@ -364,7 +371,7 @@ func TestGetLineVerticalPartial(t *testing.T) {
 }
 
 // Line toward Southwest
-func TestGetLineAngledPartial(t *testing.T) {
+func TestGetLine__AngledPartial(t *testing.T) {
 	var s ShapeExtractor
 	s.Init(getColorGrid())
 	s.grid[3][0].AlreadyUsed = true
@@ -394,7 +401,7 @@ func TestGetLineAngledPartial(t *testing.T) {
 	}
 }
 
-func TestGetLineOneCell(t *testing.T) {
+func TestGetLine__OneCell(t *testing.T) {
 	var s ShapeExtractor
 	s.Init(getColorGrid())
 
@@ -422,7 +429,7 @@ func TestGetLineOneCell(t *testing.T) {
 }
 
 
-func TestGetLeftDirectionFromNorth(t *testing.T) {
+func TestGetLeftDirection__FromNorth(t *testing.T) {
 	var s ShapeExtractor
 
 	results := s.getLeftDirection(0)
@@ -433,7 +440,7 @@ func TestGetLeftDirectionFromNorth(t *testing.T) {
 	}
 }
 
-func TestGetLeftDirectionFromEast(t *testing.T) {
+func TestGetLeftDirection__FromEast(t *testing.T) {
 	var s ShapeExtractor
 
 	results := s.getLeftDirection(2)
@@ -444,7 +451,7 @@ func TestGetLeftDirectionFromEast(t *testing.T) {
 	}
 }
 
-func TestGetRightDirectionFromNorth(t *testing.T) {
+func TestGetRightDirection__FromNorth(t *testing.T) {
 	var s ShapeExtractor
 
 	results := s.getAngledRightDirection(0)
@@ -455,7 +462,7 @@ func TestGetRightDirectionFromNorth(t *testing.T) {
 	}
 }
 
-func TestGetRightDirectionFromWest(t *testing.T) {
+func TestGetRightDirection__FromWest(t *testing.T) {
 	var s ShapeExtractor
 
 	results := s.getAngledRightDirection(6)
@@ -466,7 +473,7 @@ func TestGetRightDirectionFromWest(t *testing.T) {
 	}
 }
 
-func TestGetRightDirectionFromNorthWest(t *testing.T) {
+func TestGetRightDirection__FromNorthWest(t *testing.T) {
 	var s ShapeExtractor
 
 	results := s.getAngledRightDirection(7)
@@ -565,7 +572,6 @@ func TestProcessAllPolygons(t *testing.T) {
 			Points: [][2]int{
 				{1, 1},
 				{2, 0},
-				{3, 0},
 				{4, 0},
 				{3, 1},
 				{3, 2},
@@ -631,6 +637,7 @@ func TestGetAllShapes(t *testing.T) {
 		{ // A's
 			ColorRGBA: [4]uint8{1, 1, 1, 1},
 			Points: [][2]int{
+				{0, 1},
 				{1, 0},
 				{4, 0},
 				{4, 1},
@@ -638,7 +645,6 @@ func TestGetAllShapes(t *testing.T) {
 				{3, 3},
 				{2, 3},
 				{1, 2},
-				{0, 1},
 			},
 		},
 		{ // C1
@@ -701,7 +707,7 @@ func TestGetSVGText(t *testing.T) {
 	results := s.GetSVGText()
 	expected := `<svg width="5" height="4">
  <g>
-  <polygon class="#010101" points="1,0 4,0 4,1 3,2 3,3 2,3 1,2 0,1 " stroke="#010101" fill="#010101" />
+  <polygon class="#010101" points="0,1 1,0 4,0 4,1 3,2 3,3 2,3 1,2 " stroke="#010101" fill="#010101" />
   <polygon class="#DF0303" points="0,2 1,3 0,3 " stroke="#DF0303" fill="#DF0303" />
   <line class="#0202DE" x1="0" y1="0" x2="0" y2="0" stroke="#0202DE" fill="#0202DE" />
   <line class="#DF0303" x1="4" y1="2" x2="4" y2="3" stroke="#DF0303" fill="#DF0303" />
@@ -727,12 +733,18 @@ func TestGetSVGTextLarge(t *testing.T) {
 	results := s.GetSVGText()
 	expected := `<svg width="18" height="12">
  <g>
-  <polygon class="#EB0000" points="0,0 5,0 5,11 0,11 0,1 " stroke="#EB0000" fill="#EB0000" />
-  <polygon class="#EBEB00" points="6,0 11,0 11,6 6,1 " stroke="#EBEB00" fill="#EBEB00" />
-  <polygon class="#00B43C" points="12,0 17,0 17,11 12,11 12,1 " stroke="#00B43C" fill="#00B43C" />
-  <polygon class="#0000DC" points="6,2 11,7 11,11 6,11 6,3 " stroke="#0000DC" fill="#0000DC" />
-  <polygon class="#EB0000" points="14,4 15,4 15,7 14,7 14,6 14,5 " stroke="#EB0000" fill="#EB0000" />
+  <polygon class="#EB0000" points="0,0 5,0 5,11 4,11 4,4 3,3 2,4 2,11 1,11 0,11 " stroke="#EB0000" fill="#EB0000" />
+  <polygon class="#EBEB00" points="6,0 11,0 11,5 7,1 " stroke="#EBEB00" fill="#EBEB00" />
+  <polygon class="#00B43C" points="12,0 17,0 17,11 16,11 16,4 15,3 14,3 13,4 13,11 12,11 " stroke="#00B43C" fill="#00B43C" />
+  <polygon class="#0000DC" points="6,1 11,6 11,11 9,11 9,7 8,6 7,6 6,7 " stroke="#0000DC" fill="#0000DC" />
+  <polygon class="#EB0000" points="14,4 15,4 15,7 14,7 " stroke="#EB0000" fill="#EB0000" />
+  <polygon class="#EB0000" points="7,7 8,7 8,10 7,10 " stroke="#EB0000" fill="#EB0000" />
+  <polygon class="#00B43C" points="14,8 15,8 15,11 14,11 " stroke="#00B43C" fill="#00B43C" />
+  <polygon class="#0000DC" points="6,10 7,11 6,11 " stroke="#0000DC" fill="#0000DC" />
   <line class="#0000DC" x1="3" y1="4" x2="3" y2="7" stroke="#0000DC" fill="#0000DC" />
+  <line class="#EB0000" x1="3" y1="8" x2="3" y2="11" stroke="#EB0000" fill="#EB0000" />
+  <line class="#0000DC" x1="6" y1="8" x2="6" y2="9" stroke="#0000DC" fill="#0000DC" />
+  <line class="#0000DC" x1="8" y1="11" x2="8" y2="11" stroke="#0000DC" fill="#0000DC" />
  </g>
 </svg>`
 
@@ -754,7 +766,7 @@ func TestWriteSVGToFile(t *testing.T) {
 	s.WriteSVGToFile("test_svg_output.xml")
 }
 
-func TestGetIndexOfLastRepeatDirectionWhole(t *testing.T) {
+func TestGetIndexOfLastRepeatDirection__Whole(t *testing.T) {
 	outlinePoints := [][2]int{
 		{3, 3}, // South
 		{3, 4}, // South
@@ -770,7 +782,7 @@ func TestGetIndexOfLastRepeatDirectionWhole(t *testing.T) {
 	}
 }
 
-func TestGetIndexOfLastRepeatDirectionPartial(t *testing.T) {
+func TestGetIndexOfLastRepeatDirection__Partial(t *testing.T) {
 	outlinePoints := [][2]int{
 		{3, 3}, // South
 		{3, 4}, // South
@@ -786,7 +798,7 @@ func TestGetIndexOfLastRepeatDirectionPartial(t *testing.T) {
 	}
 }
 
-func TestGetIndexOfLastRepeatDirectionPatternPairWhole(t *testing.T) {
+func TestGetIndexOfLastRepeatDirectionPattern__PairWhole(t *testing.T) {
 	outlinePoints := [][2]int{
 		{3, 3},
 		{4, 3}, // East
@@ -805,7 +817,7 @@ func TestGetIndexOfLastRepeatDirectionPatternPairWhole(t *testing.T) {
 	}
 }
 
-func TestGetIndexOfLastRepeatDirectionPatternPairAlmostWhole(t *testing.T) {
+func TestGetIndexOfLastRepeatDirectionPattern__PairAlmostWhole(t *testing.T) {
 	outlinePoints := [][2]int{
 		{3, 3},
 		{4, 3}, // East
@@ -825,7 +837,7 @@ func TestGetIndexOfLastRepeatDirectionPatternPairAlmostWhole(t *testing.T) {
 	}
 }
 
-func TestGetIndexOfLastRepeatDirectionPatternPairPartial(t *testing.T) {
+func TestGetIndexOfLastRepeatDirectionPattern__PairPartial(t *testing.T) {
 	outlinePoints := [][2]int{
 		{3, 3},
 		{4, 3}, // East
@@ -844,7 +856,7 @@ func TestGetIndexOfLastRepeatDirectionPatternPairPartial(t *testing.T) {
 	}
 }
 
-func TestGetIndexOfLastRepeatDirectionPatternWhole(t *testing.T) {
+func TestGetIndexOfLastRepeatDirectionPattern__Whole(t *testing.T) {
 	outlinePoints := [][2]int{
 		{3, 3},
 		{4, 3}, // East
@@ -865,7 +877,7 @@ func TestGetIndexOfLastRepeatDirectionPatternWhole(t *testing.T) {
 	}
 }
 
-func TestGetIndexOfLastRepeatDirectionPatternAlmostWhole(t *testing.T) {
+func TestGetIndexOfLastRepeatDirectionPattern__AlmostWhole(t *testing.T) {
 	outlinePoints := [][2]int{
 		{3, 3},
 		{4, 3},  // East
@@ -887,7 +899,7 @@ func TestGetIndexOfLastRepeatDirectionPatternAlmostWhole(t *testing.T) {
 	}
 }
 
-func TestGetIndexOfLastRepeatDirectionPatternPartial(t *testing.T) {
+func TestGetIndexOfLastRepeatDirectionPattern__Partial(t *testing.T) {
 	outlinePoints := [][2]int{
 		{3, 3},
 		{4, 3},  // East
@@ -913,7 +925,7 @@ func TestGetIndexOfLastRepeatDirectionPatternPartial(t *testing.T) {
 	}
 }
 
-func TestGetIndexOfLastRepeatDirectionPatternShort(t *testing.T) {
+func TestGetIndexOfLastRepeatDirectionPattern__Short(t *testing.T) {
 	outlinePoints := [][2]int{
 		{3, 3},
 		{4, 3}, // East
@@ -932,7 +944,7 @@ func TestGetIndexOfLastRepeatDirectionPatternShort(t *testing.T) {
 	}
 }
 
-func TestGetIndexOfLastRepeatDirectionPatternTiny(t *testing.T) {
+func TestGetIndexOfLastRepeatDirectionPattern__Tiny(t *testing.T) {
 	outlinePoints := [][2]int{{3, 3}}
 
 	results := getIndexOfLastRepeatDirectionPattern(outlinePoints)
@@ -943,7 +955,7 @@ func TestGetIndexOfLastRepeatDirectionPatternTiny(t *testing.T) {
 	}
 }
 
-func TestReducePolygonOutlineHorizontalLine(t *testing.T) {
+func TestReducePolygonOutline__HorizontalLine(t *testing.T) {
 
 	outlinePoints := [][2]int{
 		{0, 0},
@@ -973,7 +985,7 @@ func TestReducePolygonOutlineHorizontalLine(t *testing.T) {
 	}
 }
 
-func TestReducePolygonOutlineVerticalLine(t *testing.T) {
+func TestReducePolygonOutline__VerticalLine(t *testing.T) {
 
 	outlinePoints := [][2]int{
 		{0, 0},
@@ -1004,7 +1016,7 @@ func TestReducePolygonOutlineVerticalLine(t *testing.T) {
 	}
 }
 
-func TestReducePolygonOutlineFallingSlope(t *testing.T) {
+func TestReducePolygonOutline__FallingSlope(t *testing.T) {
 	outlinePoints := [][2]int{
 		{0, 0},
 		{0, 1}, // South 1
@@ -1036,7 +1048,7 @@ func TestReducePolygonOutlineFallingSlope(t *testing.T) {
 	}
 }
 
-func TestReducePolygonOutlineRisingSlope(t *testing.T) {
+func TestReducePolygonOutline__RisingSlope(t *testing.T) {
 
 	outlinePoints := [][2]int{
 		{0, 4},
@@ -1069,7 +1081,7 @@ func TestReducePolygonOutlineRisingSlope(t *testing.T) {
 	}
 }
 
-func TestReducePolygonOutlineComplicated(t *testing.T) {
+func TestReducePolygonOutline__Complicated(t *testing.T) {
 
 	outlinePoints := [][2]int{
 		{0, 0},
@@ -1113,6 +1125,34 @@ func TestReducePolygonOutlineComplicated(t *testing.T) {
 		{1, 5}, // West
 		{0, 5}, // West
 		{0, 2}, // North
+	}
+
+	err := compareOutlinePoints(resultsPoints, expectedPoints)
+	if err != "" {
+		t.Errorf("Reduced Polygon (multi pass) outline. %s", err)
+	}
+}
+
+
+func TestReducePolygonOutline__Triangle(t *testing.T) {
+
+	outlinePoints := [][2]int{
+		{0, 0},
+		{1, 0},
+		{2, 0},
+		{3, 0},
+		{4, 0},
+		{4, 4},
+		{1, 1},
+	}
+
+	_, resultsPoints := ReducePolygonOutline(outlinePoints)
+
+	expectedPoints := [][2]int{
+		{0, 0},
+		{4, 0},
+		{4, 4},
+		{1, 1},
 	}
 
 	err := compareOutlinePoints(resultsPoints, expectedPoints)

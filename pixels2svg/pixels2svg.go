@@ -340,7 +340,8 @@ func (s *ShapeExtractor) ProcessAllPolygons() ([]Polygon, error) {
 			if err != nil {
 				return allPolygons, err
 			}
-
+		 	_, newPoints := ReducePolygonOutline(nextPolygon.Points)
+		 	nextPolygon.Points = newPoints
 			allPolygons = append(allPolygons, nextPolygon)
 		}
 	}

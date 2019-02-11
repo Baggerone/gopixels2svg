@@ -156,7 +156,7 @@ func compareGrids(results, expected [][]GridCell) string {
 	return ""
 }
 
-func getShapeFromGrid(grid Grid, color Color) Shape{
+func getShapeFromGrid(grid Grid, color Color) Shape {
 
 	bottomRowIndex := len(grid[0]) - 1
 
@@ -185,7 +185,9 @@ func getShapeFromGrid(grid Grid, color Color) Shape{
 			bottomRow = bottomRowIndex
 		}
 
-		shapeRefs[colIndex] = [2]int{topRow, bottomRow}
+		if topRow >= 0 && bottomRow >= 0 {
+			shapeRefs[colIndex] = [2]int{topRow, bottomRow}
+		}
 
 	}
 
@@ -195,7 +197,6 @@ func getShapeFromGrid(grid Grid, color Color) Shape{
 	}
 
 	return shape
-
 }
 
 func compareShapeReferences(results, expected Shape) string {
@@ -1998,6 +1999,122 @@ b.b.r.b.b`
 
 }
 
+
+func TestGetShapeStartingAtCellReference__WithHole(t *testing.T) {
+
+	textGrid := `
+b.b.b.b.b
+b.b.r.g.g
+r.b.r.r.g
+b.r.r.b.r
+b.b.r.b.b`
+	grid := initGrid(textGrid, nil, t)
+
+	shapeExtr := ShapeExtractor{}
+	shapeExtr.Init(grid)
+	startCol := 2
+	upperRow := 1
+
+	results := getShapeStartingAtCellReference(&shapeExtr, startCol, upperRow)
+
+	expected := Shape{
+		References: map[int][2]int{
+			1: {3, 3},
+			2: {1, 4},
+			3: {2, 2},
+		},
+	}
+
+	errMsg := compareShapeReferences(results, expected)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		return
+	}
+
+	usedTrue := GridCell{AlreadyUsed: true}
+	usedFalse := GridCell{AlreadyUsed: false}
+
+	resultsGrid := shapeExtr.grid
+	expectedGrid := Grid{
+		// Column 0
+		{usedFalse, usedFalse, usedFalse, usedFalse, usedFalse},
+		// Column 1
+		{usedFalse, usedFalse, usedFalse, usedTrue, usedFalse},
+		// Column 2
+		{usedFalse, usedTrue, usedTrue, usedTrue, usedTrue},
+		// Column 3
+		{usedFalse, usedFalse, usedTrue, usedFalse, usedFalse},
+		// Column 4
+		{usedFalse, usedFalse, usedFalse, usedFalse, usedFalse},
+	}
+
+	errMsg = compareGridsAlreadyUsed(resultsGrid, expectedGrid)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		return
+	}
+}
+
+
+
+func TestGetShapeStartingAtCellReference__Triangle(t *testing.T) {
+
+	textGrid := `
+b.r.r.r.r
+b.b.r.r.r
+b.b.b.r.r
+b.b.b.b.r
+b.b.b.b.b`
+	grid := initGrid(textGrid, nil, t)
+
+	shapeExtr := ShapeExtractor{}
+	shapeExtr.Init(grid)
+	startCol := 1
+	upperRow := 0
+
+	results := getShapeStartingAtCellReference(&shapeExtr, startCol, upperRow)
+
+	expected := Shape{
+		References: map[int][2]int{
+			1: {0, 0},
+			2: {0, 1},
+			3: {0, 2},
+			4: {0, 3},
+		},
+	}
+
+	errMsg := compareShapeReferences(results, expected)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		return
+	}
+
+	usedTrue := GridCell{AlreadyUsed: true}
+	usedFalse := GridCell{AlreadyUsed: false}
+
+	resultsGrid := shapeExtr.grid
+	expectedGrid := Grid{
+		// Column 0
+		{usedFalse, usedFalse, usedFalse, usedFalse, usedFalse},
+		// Column 1
+		{usedTrue, usedFalse, usedFalse, usedFalse, usedFalse},
+		// Column 2
+		{usedTrue, usedTrue, usedFalse, usedFalse, usedFalse},
+		// Column 3
+		{usedTrue, usedTrue, usedTrue, usedFalse, usedFalse},
+		// Column 4
+		{usedTrue, usedTrue, usedTrue, usedTrue, usedFalse},
+	}
+
+	errMsg = compareGridsAlreadyUsed(resultsGrid, expectedGrid)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		return
+	}
+
+}
+
+
 func TestGetShapeStartingAtCellReference__BigComplicatedOne(t *testing.T) {
 /*
 0.1.2.3.4.5.6.7.8.9.0.1.2.3
@@ -2089,6 +2206,7 @@ b.b.b.b.b.r.b.b.r.b.b.r.b.b`
 	}
 }
 
+
 func TestGetPolygonFromShape__SideColumnsTaller(t *testing.T) {
 
 	textGrid := `
@@ -2170,4 +2288,81 @@ b.r.r.r.b`
 		return
 	}
 
+}
+
+
+func TestGetPolygonFromShape__WithHole(t *testing.T) {
+
+	textGrid := `
+b.r.b.b.b
+b.r.r.b.b
+b.r.r.r.b
+b.r.b.r.r
+b.b.r.r.r`
+
+	redColor := Red().Color
+
+	grid := initGrid(textGrid, nil, t)
+
+	shape := getShapeFromGrid(grid, redColor)
+
+	resultPolygon, _ := getPolygonFromShape(shape)
+	results := resultPolygon.Points
+
+	expected := [][2]int{
+		{1, 0},
+		{2, 1},
+		{3, 2},
+		{4, 3},
+		{4, 4},
+		{3, 4},
+		{3, 3},
+		{2, 2},
+		{1, 3},
+	}
+
+	errMsg := compareOutlinePoints(results, expected)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		//t.Errorf("%s\n Expected: \n %v\n  But got: \n%v", errMsg, expected, results)
+		return
+	}
+
+}
+
+
+func TestGetPolygonFromShape__Triangle(t *testing.T) {
+
+	textGrid := `
+r.r.r.r.b
+b.r.r.r.b
+b.b.r.r.b
+b.b.b.r.b
+b.b.b.b.b`
+
+	redColor := Red().Color
+
+	grid := initGrid(textGrid, nil, t)
+
+	shape := getShapeFromGrid(grid, redColor)
+
+	resultPolygon, _ := getPolygonFromShape(shape)
+	results := resultPolygon.Points
+
+	expected := [][2]int{
+		{0, 0},
+		{1, 0},
+		{2, 0},
+		{3, 0},
+		{3, 3},
+		{2, 2},
+		{1, 1},
+	}
+
+	errMsg := compareOutlinePoints(results, expected)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		//t.Errorf("%s\n Expected: \n %v\n  But got: \n%v", errMsg, expected, results)
+		return
+	}
 }

@@ -197,6 +197,11 @@ func findRowOfLowerCellInStartingColumn(shapeExtr *ShapeExtractor, startColumn, 
 	}
 
 	cellType := GridCell{Color: shapeColor}
+
+	if ! isSameColorAdjacent(shapeExtr, startColumn, startRow, cellType, S) {
+		return startRow
+	}
+
 	goodLowRow := startRow
 	_, nextRow := getCellReferenceInDirection(startColumn, startRow, S)
 
@@ -453,11 +458,7 @@ func getShapeColumnsToOneSide(
 	startRow, lowestRow int,
 	shape Shape,
 ) Shape {
-
-	if startRow >= lowestRow {
-		return shape
-	}
-
+	
 	cellIsAtEdge := shapeExtr.cellIsAtRightOrLeft(lookingToEast, previousColumn)
 	if cellIsAtEdge {
 		return shape
@@ -568,6 +569,7 @@ func getShapeStartingAtCellReference(shapeExtr *ShapeExtractor, startColumn, sta
 
 	return shape
 }
+
 
 func addPolygonPointAlongColumnTops(colIndex int, shape Shape, polygonRefs [][2]int) [][2]int {
 	currentTopRow := shape.References[colIndex][0]
