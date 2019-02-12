@@ -1810,6 +1810,7 @@ r.r.b.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
+
 func TestGetLowerRowOfColumnToLeft__NotAtRight__NotToBottom(t *testing.T) {
 
 	textGrid := `
@@ -1832,6 +1833,7 @@ b.b.b.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
+
 func TestGetLowerRowOfColumnToLeft__NotAtLeft__AvoidStalactite(t *testing.T) {
 
 	textGrid := `
@@ -1854,6 +1856,7 @@ b.r.b.b`
 		t.Errorf("Bad row. Expected %d.  Got %d", expected, results)
 	}
 }
+
 func TestGetShapeColumnsToLeft__NotAtLeft(t *testing.T) {
 
 	textGrid := `
@@ -1888,6 +1891,61 @@ b.r.b.b`
 		return
 	}
 }
+
+func TestGetShapeColumnsToLeft__SashUnderDot(t *testing.T) {
+
+	textGrid := `
+r.r.r.r.r.r
+r.r.r.r.r.r
+r.r.b.r.r.r
+r.r.r.r.r.b
+r.r.r.r.b.b
+r.r.r.b.b.r
+r.r.b.b.r.r
+r.b.b.r.r.r
+b.b.r.r.r.r`
+
+	gridUsed := [][]bool{
+		{true, true, true, true, true, true},
+		{true, true, true, true, true, true},
+		{true, true, false, true, true, true},
+		{true, true, false, true, true, true},
+		{true, true, false, true, true, true},
+		{true, true, false, true, true, false},
+		{true, true, true, true, false, false},
+		{true, true, true, false, false, false},
+		{true, true, false, false, false, false},
+	}
+
+	grid := initGrid(textGrid, gridUsed, t)
+
+	shapeExtr := ShapeExtractor{}
+	shapeExtr.Init(grid)
+	startCol := 5
+	upperRow := 5
+	lowestRow := 8
+	shape := Shape{
+		References: map[int][2]int{5:{5, 8}},
+		Color: Red().Color,
+	}
+	results := getShapeColumnsToLeft(&shapeExtr, startCol, upperRow, lowestRow, shape)
+
+	expected := Shape{
+		References: map[int][2]int{
+			2: {8, 8},
+			3: {7, 8},
+			4: {6, 8},
+			5: {5, 8},
+		},
+	}
+
+	errMsg := compareShapeReferences(results, expected)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		return
+	}
+}
+
 func TestGetShapeColumnsToLeft__None(t *testing.T) {
 
 	textGrid := `

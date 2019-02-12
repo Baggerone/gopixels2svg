@@ -506,6 +506,7 @@ func getShapeColumnsToOneSide(
 		if nextUpperRow >= nextLowerRow {
 			break
 		}
+		startRow = nextUpperRow
 	}
 
 	return shape
