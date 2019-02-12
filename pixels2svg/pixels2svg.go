@@ -312,6 +312,8 @@ func (s *ShapeExtractor) ProcessAllPolygons() ([]Polygon, error) {
 				continue
 			}
 
+			shape = stretchShapeRight(shape, s.ColCount)
+
 			nextPolygon, err := getPolygonFromShape(shape)
 			if err != nil {
 				return allPolygons, err

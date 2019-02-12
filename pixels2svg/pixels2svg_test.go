@@ -534,7 +534,7 @@ func TestProcessAllPolygons(t *testing.T) {
 	expected := []Polygon{
 		{ // A's
 			ColorRGBA: Color{1, 1, 1, 1},
-			Points:    [][2]int{{0, 0}, {1, 0}, {0, 1}},
+			Points:    [][2]int{{0, 0}, {2, 0}, {1, 1}, {0, 1}},
 		},
 		{ // B's
 			ColorRGBA: Color{2, 2, 2, 2},
@@ -542,15 +542,15 @@ func TestProcessAllPolygons(t *testing.T) {
 				{1, 1},
 				{2, 0},
 				{4, 0},
-				{3, 1},
-				{3, 2},
+				{4, 2},
+				{3, 3},
 				{2, 3},
 				{1, 2},
 			},
 		},
 		{ // C2
 			ColorRGBA: Color{3, 3, 3, 3},
-			Points:    [][2]int{{0, 2}, {1, 3}, {0, 3}},
+			Points:    [][2]int{{0, 2}, {1, 2}, {2, 3}, {1, 3}, {0, 3}},
 		},
 		{ // C1
 			ColorRGBA: Color{3, 3, 3, 3},
@@ -609,16 +609,14 @@ func TestGetAllShapes(t *testing.T) {
 				{0, 1},
 				{1, 0},
 				{4, 0},
-				{4, 1},
-				{3, 2},
-				{3, 3},
+				{4, 3},
 				{2, 3},
 				{1, 2},
 			},
 		},
 		{ // C1
 			ColorRGBA: [4]uint8{3, 3, 3, 3},
-			Points:    [][2]int{{0, 2}, {1, 3}, {0, 3}},
+			Points:    [][2]int{{0, 2}, {1, 2}, {2, 3}, {1, 3}, {0, 3}},
 		},
 	}
 
@@ -676,8 +674,8 @@ func TestGetSVGText(t *testing.T) {
 	results := s.GetSVGText()
 	expected := `<svg width="5" height="4">
  <g>
-  <polygon class="#010101" points="0,1 1,0 4,0 4,1 3,2 3,3 2,3 1,2 " stroke="#010101" fill="#010101" />
-  <polygon class="#DF0303" points="0,2 1,3 0,3 " stroke="#DF0303" fill="#DF0303" />
+  <polygon class="#010101" points="0,1 1,0 4,0 4,3 2,3 1,2 " stroke="#010101" fill="#010101" />
+  <polygon class="#DF0303" points="0,2 1,2 2,3 1,3 0,3 " stroke="#DF0303" fill="#DF0303" />
   <line class="#0202DE" x1="0" y1="0" x2="0" y2="0" stroke="#0202DE" fill="#0202DE" />
   <line class="#DF0303" x1="4" y1="2" x2="4" y2="3" stroke="#DF0303" fill="#DF0303" />
  </g>
@@ -702,14 +700,14 @@ func TestGetSVGTextLarge(t *testing.T) {
 	results := s.GetSVGText()
 	expected := `<svg width="18" height="12">
  <g>
-  <polygon class="#EB0000" points="0,0 5,0 5,11 4,11 4,4 3,3 2,4 2,11 1,11 0,11 " stroke="#EB0000" fill="#EB0000" />
-  <polygon class="#EBEB00" points="6,0 11,0 11,5 7,1 " stroke="#EBEB00" fill="#EBEB00" />
-  <polygon class="#00B43C" points="12,0 17,0 17,11 16,11 16,4 15,3 14,3 13,4 13,11 12,11 " stroke="#00B43C" fill="#00B43C" />
-  <polygon class="#0000DC" points="6,1 11,6 11,11 9,11 9,7 8,6 7,6 6,7 " stroke="#0000DC" fill="#0000DC" />
-  <polygon class="#EB0000" points="14,4 15,4 15,7 14,7 " stroke="#EB0000" fill="#EB0000" />
-  <polygon class="#EB0000" points="7,7 8,7 8,10 7,10 " stroke="#EB0000" fill="#EB0000" />
-  <polygon class="#00B43C" points="14,8 15,8 15,11 14,11 " stroke="#00B43C" fill="#00B43C" />
-  <polygon class="#0000DC" points="6,10 7,11 6,11 " stroke="#0000DC" fill="#0000DC" />
+  <polygon class="#EB0000" points="0,0 6,0 6,11 0,11 " stroke="#EB0000" fill="#EB0000" />
+  <polygon class="#EBEB00" points="6,0 12,0 12,5 11,5 7,1 " stroke="#EBEB00" fill="#EBEB00" />
+  <polygon class="#00B43C" points="12,0 17,0 17,11 16,11 16,4 15,3 14,4 14,11 13,11 12,11 " stroke="#00B43C" fill="#00B43C" />
+  <polygon class="#0000DC" points="6,1 7,1 12,6 12,11 9,11 9,7 8,6 7,7 6,7 " stroke="#0000DC" fill="#0000DC" />
+  <polygon class="#EB0000" points="14,4 16,4 16,7 15,7 14,7 " stroke="#EB0000" fill="#EB0000" />
+  <polygon class="#EB0000" points="7,7 9,7 9,10 8,10 7,10 " stroke="#EB0000" fill="#EB0000" />
+  <polygon class="#00B43C" points="14,8 16,8 16,11 15,11 14,11 " stroke="#00B43C" fill="#00B43C" />
+  <polygon class="#0000DC" points="6,10 7,10 8,11 7,11 6,11 " stroke="#0000DC" fill="#0000DC" />
   <line class="#0000DC" x1="3" y1="4" x2="3" y2="7" stroke="#0000DC" fill="#0000DC" />
   <line class="#EB0000" x1="3" y1="8" x2="3" y2="11" stroke="#EB0000" fill="#EB0000" />
   <line class="#0000DC" x1="6" y1="8" x2="6" y2="9" stroke="#0000DC" fill="#0000DC" />

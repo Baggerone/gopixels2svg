@@ -2265,6 +2265,101 @@ b.b.b.b.b.r.b.b.r.b.b.r.b.b`
 }
 
 
+
+func TestStretchShapeRight__None(t *testing.T) {
+
+	textGrid := `
+b.b.b.r
+b.r.r.r
+r.r.r.r
+b.r.r.r
+b.b.b.r`
+
+	redColor := Red().Color
+	grid := initGrid(textGrid, nil, t)
+	shape := getShapeFromGrid(grid, redColor)
+
+	results := stretchShapeRight(shape, 4)
+
+	expected := Shape{
+		References: map[int][2]int{
+			0: {2, 2},
+			1: {1, 3},
+			2: {1, 3},
+			3: {0, 4},
+		},
+	}
+
+	errMsg := compareShapeReferences(results, expected)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		return
+	}
+}
+
+
+
+func TestStretchShapeRight__All(t *testing.T) {
+
+	textGrid := `
+r.b.b.b
+r.r.b.b
+r.r.r.b
+r.r.b.b
+r.b.b.b`
+
+	redColor := Red().Color
+	grid := initGrid(textGrid, nil, t)
+	shape := getShapeFromGrid(grid, redColor)
+
+	results := stretchShapeRight(shape, 4)
+
+	expected := Shape{
+		References: map[int][2]int{
+			0: {0, 4},
+			1: {0, 4},
+			2: {1, 3},
+			3: {2, 2},
+		},
+	}
+
+	errMsg := compareShapeReferences(results, expected)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		return
+	}
+}
+
+
+func TestStretchShapeRight__NoAtLowerRight(t *testing.T) {
+
+	textGrid := `
+b.b.b.b
+b.b.b.b
+b.b.b.b
+b.b.b.r
+b.b.r.r`
+
+	redColor := Red().Color
+	grid := initGrid(textGrid, nil, t)
+	shape := getShapeFromGrid(grid, redColor)
+
+	results := stretchShapeRight(shape, 4)
+
+	expected := Shape{
+		References: map[int][2]int{
+			2: {4, 4},
+			3: {3, 4},
+		},
+	}
+
+	errMsg := compareShapeReferences(results, expected)
+	if errMsg != "" {
+		t.Errorf(errMsg)
+		return
+	}
+}
+
 func TestGetPolygonFromShape__SideColumnsTaller(t *testing.T) {
 
 	textGrid := `

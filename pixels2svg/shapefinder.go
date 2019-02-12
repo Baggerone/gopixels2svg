@@ -630,6 +630,59 @@ func addPolygonPointAlongColumnBottoms(colIndex int, shape Shape, polygonRefs []
 	return polygonRefs
 }
 
+// Stretch the references of a shape to the right by one column
+func stretchShapeRight(shape Shape, columnCount int) Shape {
+	columnKeys := []int{}
+	refs := shape.References
+
+	if len(shape.References) < 2 {
+		return shape
+	}
+
+	for columnKey := range refs {
+		columnKeys = append(columnKeys, columnKey)
+	}
+	sort.Ints(columnKeys)
+
+	firstColumnKey := columnKeys[0]
+	lastColumnKey := columnKeys[len(columnKeys) - 1]
+	lastColumn := refs[lastColumnKey]
+
+	originalTopRow := refs[firstColumnKey][0]
+	originalBottomRow := refs[firstColumnKey][1]
+
+	// Potentially modify the second through last columns in the following manner.
+	//  If the preceding column starts higher, then make it start that high
+	//  If the preceding column ends lower, then make it end that low
+	for columnKey := columnKeys[0]; columnKey < lastColumnKey; columnKey++ {
+
+		currentTopRow := originalTopRow
+		currentBottomRow := originalBottomRow
+
+		nextTopRow := refs[columnKey + 1][0]
+		nextBottomRow := refs[columnKey + 1][1]
+
+		originalTopRow = nextTopRow
+		originalBottomRow = nextBottomRow
+
+		if nextTopRow > currentTopRow {
+			nextTopRow = currentTopRow
+		}
+
+		if nextBottomRow < currentBottomRow {
+			nextBottomRow = currentBottomRow
+		}
+
+		refs[columnKey + 1] = [2]int{nextTopRow, nextBottomRow}
+	}
+
+	if lastColumnKey < columnCount - 1 {
+		refs[lastColumnKey + 1] = lastColumn
+	}
+
+	return shape
+}
+
 // Get the polygon references/points of a shape by working along the upper cells of each sub solumn (from left to right)
 //  and then back along the lower cells (from right to left)
 func getPolygonFromShape(shape Shape) (Polygon, error) {
