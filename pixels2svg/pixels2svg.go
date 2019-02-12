@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-type evaluatorFunc func(int, int, [4]uint8) bool
+type evaluatorFunc func(int, int, Color) bool
 
 type Color [4]uint8
 
@@ -18,26 +18,29 @@ type Line struct {
 	RowY2     int
 }
 
+// Holds the color and reference points (column, row) of a polygon
 type Polygon struct {
 	ColorRGBA Color
 	Points    [][2]int
 }
 
-
+// A Color and whether the cell has already been used
 type GridCell struct {
 	AlreadyUsed bool
 	Color       Color
 }
 
+// Whether another cell has the same color and has not already been used
 func (g GridCell) doesCellMatch(g2 GridCell) bool {
 	return !g2.AlreadyUsed && g.Color == g2.Color
 }
 
+// Columns of Rows of GridCells
 type Grid [][]GridCell
 
-
+// Various functions and pieces of information to help identify Shapes in a Grid.
 type ShapeExtractor struct {
-	badDirection       int
+	badDirection       int  // the lowest number that constitutes an invalid direction (N = 0, NW = 7)
 	grid               Grid
 	ColCount           int
 	RowCount           int
@@ -45,6 +48,9 @@ type ShapeExtractor struct {
 	cellQueue          [][2]int
 }
 
+// Give a ShapeExtractor a map of functions that will show
+// whether a cell in a certain direction is in bounds
+// and whether the cell in that direction is the same color and not already used
 func (s *ShapeExtractor) setNeighborEvaluators() {
 	if s.neighborEvaluators[0] != nil {
 		return
@@ -62,15 +68,16 @@ func (s *ShapeExtractor) setNeighborEvaluators() {
 	}
 }
 
+// Whether the cell has already been used or is a different color
 func (s *ShapeExtractor) isCellDoneOrDifferent(
 	nextCol, nextRow int,
-	color [4]uint8,
+	color Color,
 ) bool {
 	// True if different color or alreadyDone
 	return s.grid[nextCol][nextRow].Color != color || s.grid[nextCol][nextRow].AlreadyUsed
 }
 
-
+// Check whether a cell is at the right (or left) edge of a grid
 func (s *ShapeExtractor) cellIsAtRightOrLeft(checkToTheRight bool, column int) bool {
 	cellIsAtEdge := false
 	if checkToTheRight {
@@ -98,9 +105,11 @@ func (s *ShapeExtractor) cellIsAtBottom(rowY int) bool {
 	return rowY >= s.RowCount-1
 }
 
+// Is the cell not at the upper edge of the grid and is the cell to
+//  its north the same color and not already used
 func (s *ShapeExtractor) isNorthCellGood(
 	colX, rowY int,
-	color [4]uint8,
+	color Color,
 ) bool {
 	if s.cellIsAtTop(rowY) {
 		return false
@@ -112,7 +121,7 @@ func (s *ShapeExtractor) isNorthCellGood(
 
 func (s *ShapeExtractor) isNorthEastCellGood(
 	colX, rowY int,
-	color [4]uint8,
+	color Color,
 ) bool {
 	if s.cellIsAtTop(rowY) || s.cellIsAtRight(colX) {
 		return false
@@ -124,7 +133,7 @@ func (s *ShapeExtractor) isNorthEastCellGood(
 
 func (s *ShapeExtractor) isEastCellGood(
 	colX, rowY int,
-	color [4]uint8,
+	color Color,
 ) bool {
 	if s.cellIsAtRight(colX) {
 		return false
@@ -136,7 +145,7 @@ func (s *ShapeExtractor) isEastCellGood(
 
 func (s *ShapeExtractor) isSouthEastCellGood(
 	colX, rowY int,
-	color [4]uint8,
+	color Color,
 ) bool {
 	if s.cellIsAtRight(colX) || s.cellIsAtBottom(rowY) {
 		return false
@@ -148,7 +157,7 @@ func (s *ShapeExtractor) isSouthEastCellGood(
 
 func (s *ShapeExtractor) isSouthCellGood(
 	colX, rowY int,
-	color [4]uint8,
+	color Color,
 ) bool {
 	if s.cellIsAtBottom(rowY) {
 		return false
@@ -160,7 +169,7 @@ func (s *ShapeExtractor) isSouthCellGood(
 
 func (s *ShapeExtractor) isSouthWestCellGood(
 	colX, rowY int,
-	color [4]uint8,
+	color Color,
 ) bool {
 	if s.cellIsAtBottom(rowY) || s.cellIsAtLeft(colX) {
 		return false
@@ -172,7 +181,7 @@ func (s *ShapeExtractor) isSouthWestCellGood(
 
 func (s *ShapeExtractor) isWestCellGood(
 	colX, rowY int,
-	color [4]uint8,
+	color Color,
 ) bool {
 	if s.cellIsAtLeft(colX) {
 		return false
@@ -184,7 +193,7 @@ func (s *ShapeExtractor) isWestCellGood(
 
 func (s *ShapeExtractor) isNorthWestCellGood(
 	colX, rowY int,
-	color [4]uint8,
+	color Color,
 ) bool {
 	if s.cellIsAtLeft(colX) || s.cellIsAtTop(rowY) {
 		return false
@@ -194,10 +203,8 @@ func (s *ShapeExtractor) isNorthWestCellGood(
 	return !s.isCellDoneOrDifferent(newCol, newRow, color)
 }
 
-/*
- *  Assuming an outline walker is headed a certain direction,
- *  get the direction to its left.
- */
+//  Assuming an outline walker is headed a certain direction,
+//    get the direction to its left.
 func (s *ShapeExtractor) getLeftDirection(direction int) int {
 	if direction <= 1 {
 		return 6 + direction
@@ -205,56 +212,26 @@ func (s *ShapeExtractor) getLeftDirection(direction int) int {
 	return direction - 2
 }
 
-/*
- *  Assuming an outline walker is headed a certain direction,
- *  get the direction slightly to its right.
- */
+
+//  Assuming an outline walker is headed a certain direction,
+//   get the direction slightly to its right.
 func (s *ShapeExtractor) getAngledRightDirection(direction int) int {
 	return (direction + 1) % 8
 }
 
-/*
- *  Assuming an outline walker is headed a certain direction,
- *  get the direction to the right (90 degrees).
- */
+//  Assuming an outline walker is headed a certain direction,
+//  get the direction to the right (90 degrees).
 func (s *ShapeExtractor) getRight90Direction(direction int) int {
 	return (direction + 2) % 8
 }
 
-func (s *ShapeExtractor) getLatestDirection(colX1, rowY1, colX2, rowY2 int) int {
-	colDiff := colX2 - colX1
-	rowDiff := rowY2 - rowY1
 
-	switch {
-	case (colDiff == 0 && rowDiff < 0):
-		return 0
-	case (colDiff > 0 && rowDiff < 0):
-		return 1
-	case (colDiff > 0 && rowDiff == 0):
-		return 2
-	case (colDiff > 0 && rowDiff > 0):
-		return 3
-	case (colDiff == 0 && rowDiff > 0):
-		return 4
-	case (colDiff < 0 && rowDiff > 0):
-		return 5
-	case (colDiff < 0 && rowDiff == 0):
-		return 6
-	case (colDiff < 0 && rowDiff < 0):
-		return 7
-	}
-
-	return 0
-}
-
-/*
- * Given a cell and a outline walker's direction, what is the new direction
- * of the first good neighboring cell,
- * starting from the left of the walker and going clockwise.
- */
+// Given a cell and a outline walker's direction, what is the new direction
+//   of the first good neighboring cell,
+//   starting from the left of the walker and going clockwise.
 func (s *ShapeExtractor) directionToGoodNeighboringCell(
 	colX, rowY, direction int,
-	color [4]uint8,
+	color Color,
 ) int {
 
 	s.setNeighborEvaluators()
@@ -272,11 +249,8 @@ func (s *ShapeExtractor) directionToGoodNeighboringCell(
 	return s.badDirection
 }
 
-/*
- * Given a starting cell, get the range of cells to its right and below
- * that have the same color and form a line
- *
- */
+// Given a starting cell, get the range of cells to its right and below
+// that have the same color and form a line
 func (s *ShapeExtractor) GetLine(startCol, startRow int) Line {
 	color := s.grid[startCol][startRow].Color
 
@@ -319,6 +293,7 @@ func (s *ShapeExtractor) GetLine(startCol, startRow int) Line {
 	return newLine
 }
 
+// Given a Grid, set the column and row counts ...
 func (s *ShapeExtractor) Init(grid Grid) {
 	s.badDirection = 8
 	s.ColCount = len(grid)
@@ -326,6 +301,7 @@ func (s *ShapeExtractor) Init(grid Grid) {
 	s.grid = grid
 }
 
+// Find all the shapes in a grid and identify the matching polygons
 func (s *ShapeExtractor) ProcessAllPolygons() ([]Polygon, error) {
 	allPolygons := []Polygon{}
 
@@ -349,10 +325,7 @@ func (s *ShapeExtractor) ProcessAllPolygons() ([]Polygon, error) {
 	return allPolygons, nil
 }
 
-/*
- * Goes through the grid, cell by cell, and gets all the lines of the same color.
- *
- */
+// Goes through the grid, cell by cell, and gets all the contiguous lines of the same color.
 func (s *ShapeExtractor) ProcessAllLines() []Line {
 	allLines := []Line{}
 
@@ -369,6 +342,7 @@ func (s *ShapeExtractor) ProcessAllLines() []Line {
 	return allLines
 }
 
+// Get all the polygons and lines in the grid
 func (s *ShapeExtractor) GetAllShapes() ([]Polygon, []Line, error) {
 	s.setNeighborEvaluators()
 	allPolygons, err := s.ProcessAllPolygons()
@@ -380,6 +354,7 @@ func (s *ShapeExtractor) GetAllShapes() ([]Polygon, []Line, error) {
 	return allPolygons, allLines, nil
 }
 
+// Get all the polygons and lines in the grid and convert them to SVG text
 func (s *ShapeExtractor) GetSVGText() string {
 	allPolygons, allLines, _ := s.GetAllShapes()
 
@@ -418,6 +393,7 @@ func (s *ShapeExtractor) GetSVGText() string {
 	return svgBuffer.String()
 }
 
+// Get all the polygons and lines in a grid, convert them to SVG text and write them to a file
 func (s *ShapeExtractor) WriteSVGToFile(filePath string) error {
 	f, err := os.Create(filePath)
 	defer f.Close()
@@ -431,76 +407,9 @@ func (s *ShapeExtractor) WriteSVGToFile(filePath string) error {
 	return err
 }
 
-func GetHexColor(colorRGBA [4]uint8) string {
+// Convert the three primary color codes from RGB (uint8) to Hex format
+func GetHexColor(colorRGBA Color) string {
 	return fmt.Sprintf("#%02X%02X%02X", colorRGBA[0], colorRGBA[1], colorRGBA[2])
-}
-
-/*
- * Given an outline of a polygon on a grid, find the pair of indexes
- *  where there is the first overlap and return that pair.
- * Returns empty array if no overlap
- */
-func FindOutlineOverlap(outlinePoints [][2]int) [2]int {
-	if len(outlinePoints) == 0 {
-		return [2]int{}
-	}
-
-	for outerIndex, outerPoint := range outlinePoints[1:] {
-		outerColX := outerPoint[0]
-		outerRowY := outerPoint[1]
-
-		for innerIndex, innerPoint := range outlinePoints[0:outerIndex] {
-			innerColX := innerPoint[0]
-			innerRowY := innerPoint[1]
-
-			if outerColX == innerColX && outerRowY == innerRowY {
-				return [2]int{innerIndex, outerIndex + 1} // Add to outerIndex, since it starts at 1
-			}
-		}
-	}
-
-	return [2]int{}
-}
-
-/*
- * Given an outline of a polygon on a grid, purge out the sections that
- * loop back on themselves and return a slice of those sections.
- */
-func CleanUpPolygonOutline(
-	outlinePoints [][2]int,
-	purgedOutlines [][][2]int,
-	startIndex int,
-) [][][2]int {
-
-	allPolygons := [][][2]int{outlinePoints}
-	allPolygons = append(allPolygons, purgedOutlines...)
-
-	if len(outlinePoints) <= startIndex {
-		return allPolygons
-	}
-
-	overlapPoints := FindOutlineOverlap(outlinePoints)
-	if overlapPoints == [2]int{} {
-		return allPolygons
-	}
-
-	newOutline := [][2]int{} // Create new slice to avoid  modifying original
-	newOutline = append(newOutline, outlinePoints[:overlapPoints[0]]...)
-	newOutline = append(newOutline, outlinePoints[overlapPoints[1]:]...)
-
-	newPurge := [][2]int{}
-	newPurge = append(newPurge, outlinePoints[overlapPoints[0]:overlapPoints[1]]...)
-
-	// Only include sections that have at least two points
-	if len(newPurge) > 2 {
-		purgedOutlines = append(purgedOutlines, newPurge)
-	}
-
-	return CleanUpPolygonOutline(
-		newOutline,
-		purgedOutlines,
-		overlapPoints[0]+1,
-	)
 }
 
 func getDirection(num1, num2 int, increasingLetter, decreasingLetter string) string {
@@ -657,18 +566,4 @@ func ReducePolygonOutline(
 	}
 
 	return reductionCount, newPoints
-}
-
-func IsPointIn2IntArray(colX, rowY int, outlinePoints [][2]int) bool {
-	for _, nextPoint := range outlinePoints {
-		nextCol, nextRow := split2Int(nextPoint)
-		if colX == nextCol && rowY == nextRow {
-			return true
-		}
-	}
-	return false
-}
-
-func split2Int(inArray [2]int) (int, int) {
-	return inArray[0], inArray[1]
 }

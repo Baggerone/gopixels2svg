@@ -21,7 +21,7 @@ type Shape struct {
 }
 
 /*
- * Given a cell and a direction what are the cell cordinates of the neighboring
+ * Given a cell's coordinates and a direction what are the cell coordinates of the neighboring
  * cell in that direction.
  * Assumes that boundary checks are already done, so that the starting cell
  * won't be on a boundary
@@ -53,6 +53,7 @@ func getCellReferenceInDirection(columnX, rowY, nextDirection int) (int, int) {
 	return 0, 0
 }
 
+// Given a cell's coordinates and a direction, is the neighboring cell in that direction still inside the boundaries
 func isAdjacentCellInBounds(shapeExtr *ShapeExtractor, column, row int, direction int) bool {
 	switch direction {
 	case N: // North
@@ -100,6 +101,9 @@ func isAdjacentCellInBounds(shapeExtr *ShapeExtractor, column, row int, directio
 	return false
 }
 
+
+// Given a cell's coordinates and a direction, is the neighboring cell in that direction still inside the boundaries
+// and of the same color and has not already been used
 func isSameColorAdjacent(shapeExtr *ShapeExtractor, column, row int, shapeCell GridCell, directions ...int) bool {
 	for _, direction := range directions {
 		if ! isAdjacentCellInBounds(shapeExtr, column, row, direction) {
@@ -306,7 +310,7 @@ func findUpperRowForNextColumn(shapeExtr *ShapeExtractor, column, startRow int) 
 }
 
 
-// Assumes that starting cell is not of the same color.
+// Ignores the starting cell.
 // Looks down the column from there for a cell of the same color, with some limitations
 func getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
 	shapeExtr *ShapeExtractor,
@@ -326,6 +330,9 @@ func getUpperRowOfNextColumnWhenItsLowerThanTheStartCell(
 	return 0, fmt.Errorf("No valid cells to the right")
 }
 
+// Gets the row of the highest cell in the neighboring column that is of the same color
+// and can be considered to be part of the same shape (with contiguous matching cells that
+// are not in a single line, i.e. without other matching cells beside them)
 func getUpperRowOfNextColumn(
 	shapeExtr *ShapeExtractor,
 	columnIsToEast bool,
@@ -394,7 +401,9 @@ func getUpperRowOfNextColumn(
 	return row, nil
 }
 
-
+// Gets the row of the lowest cell in the neighboring column that is of the same color
+// and can be considered to be part of the same shape (with contiguous matching cells that
+// are not in a single line, i.e. without other matching cells beside them)
 func getLowerRowOfNextColumn(
 	shapeExtr *ShapeExtractor,
 	columnIsToEast bool,
@@ -451,6 +460,9 @@ func getLowerRowOfNextColumn(
 	return newLowestRow
 }
 
+// Adds to a shape by figuring out the upper and lower cells of the neighboring sub column
+//  that can be considered to be part of the same shape (with contiguous matching cells that
+// are not in a single line, i.e. without other matching cells beside them)
 func getShapeColumnsToOneSide(
 	shapeExtr *ShapeExtractor,
 	lookingToEast bool,
@@ -543,6 +555,9 @@ func setSubColumnAlreadyUsed(shapeExtr *ShapeExtractor, column, startRow, endRow
 	}
 }
 
+// Get the references of the neighboring sub columns that can be
+//   considered to be part of the same shape (with contiguous matching cells that
+//   are not in a single line, i.e. without other matching cells beside them)
 func getShapeStartingAtCellReference(shapeExtr *ShapeExtractor, startColumn, startRow int) Shape {
 	shape := Shape{
 		References: map[int][2]int{},
@@ -571,7 +586,8 @@ func getShapeStartingAtCellReference(shapeExtr *ShapeExtractor, startColumn, sta
 	return shape
 }
 
-
+// Use the top cells of two columns of a shape (from left to right) to get the matching
+//   polygon references/points
 func addPolygonPointAlongColumnTops(colIndex int, shape Shape, polygonRefs [][2]int) [][2]int {
 	currentTopRow := shape.References[colIndex][0]
 	polygonRefs = append(polygonRefs, [2]int{colIndex, currentTopRow})
@@ -592,6 +608,8 @@ func addPolygonPointAlongColumnTops(colIndex int, shape Shape, polygonRefs [][2]
 	return polygonRefs
 }
 
+// Use the bottom cells of two columns of a shape (from right to left) to get the matching
+//   polygon references/points
 func addPolygonPointAlongColumnBottoms(colIndex int, shape Shape, polygonRefs [][2]int) [][2]int {
 	currentBottomRow := shape.References[colIndex][1]
 	polygonRefs = append(polygonRefs, [2]int{colIndex, currentBottomRow})
@@ -612,6 +630,8 @@ func addPolygonPointAlongColumnBottoms(colIndex int, shape Shape, polygonRefs []
 	return polygonRefs
 }
 
+// Get the polygon references/points of a shape by working along the upper cells of each sub solumn (from left to right)
+//  and then back along the lower cells (from right to left)
 func getPolygonFromShape(shape Shape) (Polygon, error) {
 
 	polygonRefs := [][2]int{}

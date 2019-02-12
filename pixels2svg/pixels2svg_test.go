@@ -484,37 +484,6 @@ func TestGetRightDirection__FromNorthWest(t *testing.T) {
 	}
 }
 
-func TestFindOutlineOverlap(t *testing.T) {
-	outlinePoints := [][2]int{
-		{1, 1},
-		{1, 2},
-		{1, 3},
-		{2, 3},
-		{3, 3},
-		{3, 2},
-		{2, 2},
-		{1, 2},
-		{1, 1},
-		{2, 1},
-	}
-
-	overlap := FindOutlineOverlap(outlinePoints)
-
-	results := overlap[0]
-	expected := 1
-
-	if results != expected {
-		t.Errorf("Expected %d, but got %d", expected, results)
-	}
-
-	results = overlap[1]
-	expected = 7
-
-	if results != expected {
-		t.Errorf("Expected %d, but got %d", expected, results)
-	}
-}
-
 
 /*
  *     0   1   2   3   4
